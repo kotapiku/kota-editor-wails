@@ -6,10 +6,14 @@ export function Greet(arg1) {
   return window['go']['main']['App']['Greet'](arg1);
 }
 
-export function Read(arg1) {
-  return window['go']['main']['App']['Read'](arg1);
+export function ReadFile(arg1) {
+  return window['go']['main']['App']['ReadFile'](arg1);
 }
 
-export function Save(arg1, arg2) {
-  return window['go']['main']['App']['Save'](arg1, arg2);
+export function SaveFile(arg1, arg2) {
+  return window['go']['main']['App']['SaveFile'](arg1, arg2);
+}
+
+export function SelectFile() {
+  return window['go']['main']['App']['SelectFile']();
 }
