@@ -1,16 +1,19 @@
 import React, { useEffect, useState } from "react";
-import { Read, Save } from "../../../wailsjs/go/main/App";
+import { ReadFile, SaveFile } from "../../../wailsjs/go/main/App";
 import CodeMirror from "@uiw/react-codemirror";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 import { keymap } from "@codemirror/view";
 import { defaultKeymap } from "@codemirror/commands";
 
-export const Editor: React.FC = () => {
+export const Editor: React.FC<{ filepath: string | undefined }> = (props) => {
   const [content, setContent] = useState<string>("");
 
   const getContent = async () => {
-    let content: string = await Read("hoge.md");
+    let filepath = props.filepath == undefined ? "" : props.filepath;
+    console.log(filepath);
+
+    let content: string = await ReadFile(filepath);
 
     setContent(content);
   };
@@ -23,7 +26,7 @@ export const Editor: React.FC = () => {
     {
       key: "Mod-s",
       run: () => {
-        Save("hoge.md", content);
+        SaveFile(props.filepath == undefined ? "" : props.filepath, content);
         return true;
       },
     },
@@ -32,7 +35,7 @@ export const Editor: React.FC = () => {
 
   useEffect(() => {
     getContent();
-  }, []);
+  }, [props.filepath]);
 
   return (
     <CodeMirror
@@ -43,6 +46,7 @@ export const Editor: React.FC = () => {
         keymap.of(myKeymap),
       ]}
       onChange={onChange}
+      height="100%"
     />
   );
 };
