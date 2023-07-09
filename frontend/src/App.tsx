@@ -1,20 +1,28 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./App.css";
 import { Editor } from "./components/Editor";
-import { Input, Button, Layout, Menu, Upload } from "antd";
+import { Breadcrumb, Button, Layout, Menu } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
-import type { UploadFile } from "antd/es/upload/interface";
 import { SelectFile } from "../wailsjs/go/main/App";
+import { main } from "../wailsjs/go/models";
 
 const { Header, Content, Sider } = Layout;
 
 function App() {
-  const [filepath, setFilepath] = useState<string>();
+  const [file, setFile] = useState<main.File>();
   const onClick = async () => {
-    let filepath: string = await SelectFile();
-    console.log("selected file: ", filepath);
-    setFilepath(filepath);
+    let file = await SelectFile();
+    console.log("selected file: ", file.absolute_path);
+    setFile(file);
   };
+
+  function filenameItems(): { title: string }[] {
+    return [{ title: file == undefined ? "" : file.absolute_path }];
+  }
+
+  useEffect(() => {
+    filenameItems();
+  }, [file]);
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
@@ -25,8 +33,9 @@ function App() {
         <Menu theme="dark" mode="inline" defaultSelectedKeys={["4"]} />
       </Sider>
       <Layout>
+        <Breadcrumb items={filenameItems()} />
         <Content style={{ margin: "0 16px" }}>
-          <Editor filepath={filepath} />
+          <Editor filepath={file?.absolute_path} />
         </Content>
         {/* <Footer style={{ textAlign: "center" }}>
           Ant Design ©2018 Created by Ant UED

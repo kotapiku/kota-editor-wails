@@ -9,5 +9,8 @@
     "html-react-parser": "^4.0.0",
     "react-hot-keys": "^2.7.2",
     "react-hotkeys-hook": "^4.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.4.1"
   }
 }
