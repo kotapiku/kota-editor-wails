@@ -1,41 +1,66 @@
 import React, { useEffect, useState } from "react";
-import "./App.css";
 import { Editor } from "./components/Editor";
-import { Breadcrumb, Button, Layout, Menu } from "antd";
-import { UploadOutlined } from "@ant-design/icons";
-import { SelectFile } from "../wailsjs/go/main/App";
+import { OpenDirectory, SelectFile } from "../wailsjs/go/main/App";
 import { main } from "../wailsjs/go/models";
+import { Tree, Breadcrumb, Button, Layout, Menu } from "antd";
+import { UploadOutlined } from "@ant-design/icons";
+import type { DataNode, DirectoryTreeProps } from "antd/es/tree";
+import "./App.css";
 
 const { Header, Content, Sider } = Layout;
+const { DirectoryTree } = Tree;
+
+function fromFileNode(node: main.FileNode): DataNode {
+  return {
+    title: node.current_dir.basename,
+    key: node.current_dir.absolute_path,
+    selectable: !node.is_dir,
+    isLeaf: !node.is_dir,
+    children: node.children.map((child) => fromFileNode(child)),
+  };
+}
 
 function App() {
-  const [file, setFile] = useState<main.File>();
+  const [filePath, setFilePath] = useState<string>();
+  const [treeData, setTreeData] = useState<DataNode[]>([]);
+
   const onClick = async () => {
     let file = await SelectFile();
     console.log("selected file: ", file.absolute_path);
-    setFile(file);
+    setFilePath(file.absolute_path);
   };
 
-  function filenameItems(): { title: string }[] {
-    return [{ title: file == undefined ? "" : file.absolute_path }];
-  }
+  const onClickDir = async () => {
+    let dir = await OpenDirectory();
+    console.log("selected file: ", dir.current_dir);
+    setTreeData([...treeData, fromFileNode(dir)]);
+  };
 
-  useEffect(() => {
-    filenameItems();
-  }, [file]);
+  const onSelect: DirectoryTreeProps["onSelect"] = (keys, info) => {
+    console.log("Trigger Select", keys, info);
+    setFilePath(info.selectedNodes[0].key as string);
+  };
+
+  const onExpand: DirectoryTreeProps["onExpand"] = (keys, info) => {
+    console.log("Trigger Expand", keys, info);
+  };
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
       <Sider>
-        <Button icon={<UploadOutlined />} onClick={onClick}>
-          Open file
+        <Button icon={<UploadOutlined />} onClick={onClickDir}>
+          Open directory
         </Button>
-        <Menu theme="dark" mode="inline" defaultSelectedKeys={["4"]} />
+        <DirectoryTree
+          defaultExpandAll
+          onSelect={onSelect}
+          onExpand={onExpand}
+          treeData={treeData}
+        />
       </Sider>
       <Layout>
-        <Breadcrumb items={filenameItems()} />
         <Content style={{ margin: "0 16px" }}>
-          <Editor filepath={file?.absolute_path} />
+          <Editor filepath={filePath} />
         </Content>
         {/* <Footer style={{ textAlign: "center" }}>
           Ant Design ©2018 Created by Ant UED

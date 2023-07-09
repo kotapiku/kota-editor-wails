@@ -1,3 +1,7 @@
 #app {
   height: 100vh;
 }
+
+.ant-tree-node-selected {
+  color: #08c !important;
+}
