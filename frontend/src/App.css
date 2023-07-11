@@ -2,6 +2,10 @@
   height: 100vh;
 }
 
-.ant-tree-node-selected {
-  color: #08c !important;
+.sidebar {
+  margin-left: 5px;
+}
+.projects {
+  margin-bottom: 0px;
+  padding-bottom: 0px;
 }
