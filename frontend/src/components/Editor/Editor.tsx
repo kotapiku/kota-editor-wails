@@ -6,6 +6,11 @@ import { languages } from "@codemirror/language-data";
 import { keymap } from "@codemirror/view";
 import { defaultKeymap } from "@codemirror/commands";
 
+import { EditorView, Decoration } from "@codemirror/view";
+import { EditorState } from "@codemirror/state";
+import { basicSetup } from "codemirror";
+// import {EditorSelection} from "@codemirror/state"
+
 export const Editor: React.FC<{ filepath: string | undefined }> = (props) => {
   const [content, setContent] = useState<string>("");
 
@@ -56,6 +61,34 @@ export const Editor: React.FC<{ filepath: string | undefined }> = (props) => {
     }
   }, [props.filepath]);
 
+  //   let linkify = EditorView.decorations.from({
+  //     create: updateLinks,
+  //     on: [EditorView.update],
+  //   });
+
+  //   let view = new EditorView({
+  //     state: EditorState.create({
+  //       doc: "[[hoge]]",
+  //       extensions: [basicSetup, linkify],
+  //     }),
+  //     parent: document.body,
+  //   });
+
+  //   function updateLinks(view: EditorView) {
+  //     let re = /\[\[(.*?)\]\]/g,
+  //       m,
+  //       decorations = [];
+  //     while ((m = re.exec(view.state.doc.toString()))) {
+  //       let from = m.index,
+  //         to = m.index + m[0].length;
+  //       let widget = document.createElement("a");
+  //       widget.href = m[1];
+  //       widget.textContent = m[1];
+  //       decorations.push(Decoration.replace({ widget, from, to }));
+  //     }
+  //     return Decoration.set(decorations);
+  //   }
+
   if (props.filepath == undefined) {
     return <div></div>;
   }
@@ -69,6 +102,9 @@ export const Editor: React.FC<{ filepath: string | undefined }> = (props) => {
       ]}
       onChange={onChange}
       height="100%"
+      basicSetup={{
+        lineNumbers: false,
+      }}
     />
   );
 };
