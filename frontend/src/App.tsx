@@ -49,6 +49,7 @@ function App() {
               style={{
                 "justify-content": "space-between",
                 "align-items": "center",
+                "margin-top": "5px",
               }}
             >
               <Text strong type="secondary">
@@ -58,6 +59,7 @@ function App() {
                 icon={<PlusOutlined />}
                 type="text"
                 onClick={onClickDir}
+                size="small"
               />
             </Row>
           </div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { ReadFile, SaveFile } from "../../../wailsjs/go/main/App";
 import CodeMirror from "@uiw/react-codemirror";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
@@ -10,11 +10,11 @@ export const Editor: React.FC<{ filepath: string | undefined }> = (props) => {
   const [content, setContent] = useState<string>("");
 
   const getContent = async () => {
-    let filepath = props.filepath == undefined ? "" : props.filepath;
-    console.log(filepath);
+    if (props.filepath == undefined) {
+      return;
+    }
 
-    let content: string = await ReadFile(filepath);
-
+    let content: string = await ReadFile(props.filepath);
     setContent(content);
   };
 
@@ -26,17 +26,39 @@ export const Editor: React.FC<{ filepath: string | undefined }> = (props) => {
     {
       key: "Mod-s",
       run: () => {
-        SaveFile(props.filepath == undefined ? "" : props.filepath, content);
+        if (props.filepath == undefined) {
+          return true;
+        }
+        SaveFile(props.filepath, content);
         return true;
       },
     },
     ...defaultKeymap,
   ];
 
+  function usePrevious(value: any) {
+    const ref = useRef();
+    useEffect(() => {
+      ref.current = value;
+    }, [value]);
+    return ref.current;
+  }
+
+  const prevPath = usePrevious(props.filepath);
   useEffect(() => {
-    getContent();
+    if (prevPath != undefined) {
+      SaveFile(prevPath, content).then(() => {
+        getContent();
+        console.log("change content", prevPath);
+      });
+    } else {
+      getContent();
+    }
   }, [props.filepath]);
 
+  if (props.filepath == undefined) {
+    return <div></div>;
+  }
   return (
     <CodeMirror
       value={content}
