@@ -6,6 +6,8 @@ export function OpenDirectory():Promise<main.FileNode>;
 
 export function ReadFile(arg1:string):Promise<string>;
 
+export function RelativePath(arg1:string,arg2:string):Promise<string>;
+
 export function SaveFile(arg1:string,arg2:string):Promise<void>;
 
 export function SelectFile():Promise<main.File>;

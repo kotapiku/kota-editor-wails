@@ -83,6 +83,10 @@ func splitPath(path string) []string {
 	return strings.Split(path, string(os.PathSeparator))
 }
 
+func (a *App) RelativePath(base string, target string) string {
+	return filepath.Dir(base) + "/" + target
+}
+
 func buildFile(name string) File {
 	return File{filepath.Base(name), name, splitPath(name)}
 }

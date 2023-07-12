@@ -5,21 +5,16 @@ import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 import { keymap } from "@codemirror/view";
 import { defaultKeymap } from "@codemirror/commands";
+import { useRecoilState } from "recoil";
+import { fileAtom } from "../../FileAtom";
+import { linkify } from "./Linkify";
 
-import { EditorView, Decoration } from "@codemirror/view";
-import { EditorState } from "@codemirror/state";
-import { basicSetup } from "codemirror";
-// import {EditorSelection} from "@codemirror/state"
-
-export const Editor: React.FC<{ filepath: string | undefined }> = (props) => {
+export const Editor: React.FC = () => {
+  const [filepath, setFilePath] = useRecoilState(fileAtom);
   const [content, setContent] = useState<string>("");
 
   const getContent = async () => {
-    if (props.filepath == undefined) {
-      return;
-    }
-
-    let content: string = await ReadFile(props.filepath);
+    let content: string = await ReadFile(filepath);
     setContent(content);
   };
 
@@ -31,10 +26,10 @@ export const Editor: React.FC<{ filepath: string | undefined }> = (props) => {
     {
       key: "Mod-s",
       run: () => {
-        if (props.filepath == undefined) {
+        if (filepath == "") {
           return true;
         }
-        SaveFile(props.filepath, content);
+        SaveFile(filepath, content);
         return true;
       },
     },
@@ -49,7 +44,7 @@ export const Editor: React.FC<{ filepath: string | undefined }> = (props) => {
     return ref.current;
   }
 
-  const prevPath = usePrevious(props.filepath);
+  const prevPath = usePrevious(filepath);
   useEffect(() => {
     if (prevPath != undefined) {
       SaveFile(prevPath, content).then(() => {
@@ -59,37 +54,9 @@ export const Editor: React.FC<{ filepath: string | undefined }> = (props) => {
     } else {
       getContent();
     }
-  }, [props.filepath]);
+  }, [filepath]);
 
-  //   let linkify = EditorView.decorations.from({
-  //     create: updateLinks,
-  //     on: [EditorView.update],
-  //   });
-
-  //   let view = new EditorView({
-  //     state: EditorState.create({
-  //       doc: "[[hoge]]",
-  //       extensions: [basicSetup, linkify],
-  //     }),
-  //     parent: document.body,
-  //   });
-
-  //   function updateLinks(view: EditorView) {
-  //     let re = /\[\[(.*?)\]\]/g,
-  //       m,
-  //       decorations = [];
-  //     while ((m = re.exec(view.state.doc.toString()))) {
-  //       let from = m.index,
-  //         to = m.index + m[0].length;
-  //       let widget = document.createElement("a");
-  //       widget.href = m[1];
-  //       widget.textContent = m[1];
-  //       decorations.push(Decoration.replace({ widget, from, to }));
-  //     }
-  //     return Decoration.set(decorations);
-  //   }
-
-  if (props.filepath == undefined) {
+  if (filepath == "") {
     return <div></div>;
   }
   return (
@@ -99,6 +66,7 @@ export const Editor: React.FC<{ filepath: string | undefined }> = (props) => {
       extensions={[
         markdown({ base: markdownLanguage, codeLanguages: languages }),
         keymap.of(myKeymap),
+        linkify(filepath, setFilePath),
       ]}
       onChange={onChange}
       height="100%"

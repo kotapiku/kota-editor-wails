@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useState } from "react";
 import { Editor } from "./components/Editor";
 import { OpenDirectory } from "../wailsjs/go/main/App";
 import { main } from "../wailsjs/go/models";
@@ -8,12 +8,14 @@ import type { MenuProps } from "antd";
 import { MenuInfo } from "rc-menu/lib/interface";
 import { FolderOutlined, FileOutlined } from "@ant-design/icons";
 import "./App.css";
+import { fileAtom } from "./FileAtom";
+import { useRecoilState } from "recoil";
 
 const { Header, Content, Sider } = Layout;
 type MenuItem = Required<MenuProps>["items"][number];
 const { Text } = Typography;
 
-// if not md then disabled: true
+// TODO: if not md then disabled: true
 function fromFileToMenuItem(node: main.FileNode): MenuItem {
   return {
     key: node.current_dir.absolute_path,
@@ -25,8 +27,8 @@ function fromFileToMenuItem(node: main.FileNode): MenuItem {
   };
 }
 
-function App() {
-  const [filePath, setFilePath] = useState<string>();
+export function App() {
+  const [filepath, setFilePath] = useRecoilState(fileAtom);
   const [items, setItems] = useState<MenuItem[]>([]);
 
   const onClickDir = async () => {
@@ -47,9 +49,9 @@ function App() {
           <div className="projects">
             <Row
               style={{
-                "justify-content": "space-between",
-                "align-items": "center",
-                "margin-top": "5px",
+                "justifyContent": "space-between",
+                "alignItems": "center",
+                "marginTop": "5px",
               }}
             >
               <Text strong type="secondary">
@@ -63,9 +65,10 @@ function App() {
               />
             </Row>
           </div>
-          <Divider style={{ "margin-bottom": "0px", "margin-top": "0px" }} />
+          <Divider style={{ "marginBottom": "0px", "marginTop": "0px" }} />
           <Menu
             onClick={onClickFile}
+            selectedKeys={filepath == "" ? [] : [filepath]}
             theme="light"
             mode="inline"
             items={items}
@@ -74,7 +77,7 @@ function App() {
       </Sider>
       <Layout>
         <Content>
-          <Editor filepath={filePath} />
+          <Editor />
         </Content>
         {/* <Footer style={{ textAlign: "center" }}>
           Ant Design ©2018 Created by Ant UED
