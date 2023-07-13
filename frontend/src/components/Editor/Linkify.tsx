@@ -37,15 +37,14 @@ export function linkify(
     }
   }
 
-  function getDecorations(view: EditorView) {
-    let state = view.state;
+  function createDeco(view: EditorView) {
     let decorations: Range<Decoration>[] = [];
-    let regex = /\[\[(.*?)\]\]/g;
+    let regex = /\[\[(.+?)\]\]/g;
     let match: RegExpExecArray | null;
 
-    let cursor = state.selection.main.head;
+    let cursor = view.state.selection.main.head;
 
-    while ((match = regex.exec(state.doc.toString())) !== null) {
+    while ((match = regex.exec(view.state.doc.toString())) !== null) {
       if (
         view.hasFocus &&
         match.index <= cursor &&
@@ -62,14 +61,60 @@ export function linkify(
     return Decoration.set(decorations);
   }
 
+  function updateDeco(update: ViewUpdate, deco: DecorationSet) {
+    if (update.docChanged || update.viewportChanged) {
+      return createDeco(update.view);
+    }
+    let decorations: Range<Decoration>[] = [];
+    let regex = /\[\[(.+?)\]\]/g;
+    let match: RegExpExecArray | null;
+
+    let previousCursor = update.startState.selection.main.head;
+    let currentCursor = update.view.state.selection.main.head;
+
+    // 昔のカーソルのところを追加する。
+    let line = update.view.state.doc.lineAt(previousCursor);
+    while ((match = regex.exec(line.text)) !== null) {
+      if (
+        update.view.hasFocus &&
+        match.index + line.from <= previousCursor &&
+        previousCursor <= match.index + match[0].length + line.from
+      ) {
+        let deco = Decoration.replace({
+          widget: new LinkWidget(match[1]),
+        }).range(
+          match.index + line.from,
+          match.index + match[0].length + line.from
+        );
+        decorations.push(deco);
+      }
+    }
+
+    return deco
+      .update({
+        add: decorations,
+      })
+      .update({
+        // 今のカーソルのところを消す。
+        filter: (from, to, value) => {
+          return !(
+            update.view.hasFocus &&
+            from <= currentCursor &&
+            currentCursor <= to
+          );
+        },
+      })
+      .map(update.changes);
+  }
+
   return ViewPlugin.fromClass(
     class {
       decorations: DecorationSet;
       constructor(view: EditorView) {
-        this.decorations = getDecorations(view);
+        this.decorations = createDeco(view);
       }
       update(update: ViewUpdate) {
-        this.decorations = getDecorations(update.view);
+        this.decorations = updateDeco(update, this.decorations);
       }
     },
     {
