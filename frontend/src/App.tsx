@@ -1,17 +1,23 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Editor } from "./components/Editor";
 import { OpenDirectory } from "../wailsjs/go/main/App";
 import { main } from "../wailsjs/go/models";
-import { Row, Divider, Typography, Button, Layout, Menu } from "antd";
-import { PlusOutlined } from "@ant-design/icons";
+import { Col, Row, Divider, Typography, Button, Layout, Menu } from "antd";
 import type { MenuProps } from "antd";
 import { MenuInfo } from "rc-menu/lib/interface";
-import { FolderOutlined, FileOutlined } from "@ant-design/icons";
+import {
+  PlusOutlined,
+  FolderOutlined,
+  FileOutlined,
+  CheckCircleOutlined,
+  LoadingOutlined,
+  WarningOutlined,
+} from "@ant-design/icons";
 import "./App.css";
-import { fileAtom } from "./FileAtom";
+import { fileAtom, fileStatusAtom, FileStatus } from "./FileAtom";
 import { useRecoilState } from "recoil";
 
-const { Header, Content, Sider } = Layout;
+const { Header, Content, Sider, Footer } = Layout;
 type MenuItem = Required<MenuProps>["items"][number];
 const { Text } = Typography;
 
@@ -28,7 +34,8 @@ function fromFileToMenuItem(node: main.FileNode): MenuItem {
 }
 
 export function App() {
-  const [filepath, setFilePath] = useRecoilState(fileAtom);
+  const [filePath, setFilePath] = useRecoilState(fileAtom);
+  const [fileStatus, setFileStatus] = useRecoilState(fileStatusAtom);
   const [items, setItems] = useState<MenuItem[]>([]);
 
   const onClickDir = async () => {
@@ -41,6 +48,17 @@ export function App() {
     console.log("selected file: ", e.key);
     setFilePath(e.key);
   };
+
+  function statusIcon(status: FileStatus) {
+    switch (status) {
+      case "Saved":
+        return <CheckCircleOutlined />;
+      case "Unsaved":
+        return <WarningOutlined />;
+      case "Saving":
+        return <LoadingOutlined />;
+    }
+  }
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
@@ -68,20 +86,38 @@ export function App() {
           <Divider style={{ "marginBottom": "0px", "marginTop": "0px" }} />
           <Menu
             onClick={onClickFile}
-            selectedKeys={filepath == "" ? [] : [filepath]}
+            selectedKeys={filePath == "" ? [] : [filePath]}
             theme="light"
             mode="inline"
             items={items}
           />
         </div>
       </Sider>
-      <Layout>
+      <Layout style={{ marginLeft: "0px" }}>
         <Content>
           <Editor />
         </Content>
-        {/* <Footer style={{ textAlign: "center" }}>
-          Ant Design ©2018 Created by Ant UED
-        </Footer> */}
+        <Footer
+          style={{
+            textAlign: "center",
+            position: "sticky",
+            bottom: 0,
+            padding: "5px",
+            width: "100%",
+            height: "28px",
+          }}
+        >
+          <Row
+            style={{
+              justifyContent: "end",
+              alignItems: "center",
+              marginRight: "10px",
+              fontSize: "18px",
+            }}
+          >
+            {statusIcon(fileStatus)}
+          </Row>
+        </Footer>
       </Layout>
     </Layout>
   );

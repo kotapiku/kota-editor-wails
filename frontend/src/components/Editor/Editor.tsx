@@ -6,30 +6,41 @@ import { languages } from "@codemirror/language-data";
 import { keymap } from "@codemirror/view";
 import { defaultKeymap } from "@codemirror/commands";
 import { useRecoilState } from "recoil";
-import { fileAtom } from "../../FileAtom";
+import { fileAtom, fileStatusAtom } from "../../FileAtom";
 import { linkify } from "./Linkify";
 
 export const Editor: React.FC = () => {
-  const [filepath, setFilePath] = useRecoilState(fileAtom);
+  const [filePath, setFilePath] = useRecoilState(fileAtom);
+  const [fileStatus, setFileStatus] = useRecoilState(fileStatusAtom);
   const [content, setContent] = useState<string>("");
 
   const getContent = async () => {
-    let content: string = await ReadFile(filepath);
+    let content: string = await ReadFile(filePath);
     setContent(content);
   };
 
   const onChange = (value: string) => {
+    setFileStatus("Unsaved");
     setContent(value);
+  };
+
+  const save = () => {
+    setFileStatus("Saving");
+    SaveFile(filePath, content);
+    setFileStatus("Saved");
+  };
+  const onBlur = () => {
+    save();
   };
 
   const myKeymap = [
     {
       key: "Mod-s",
       run: () => {
-        if (filepath == "") {
+        if (filePath == "") {
           return true;
         }
-        SaveFile(filepath, content);
+        save();
         return true;
       },
     },
@@ -44,19 +55,12 @@ export const Editor: React.FC = () => {
     return ref.current;
   }
 
-  const prevPath = usePrevious(filepath);
+  const prevPath = usePrevious(filePath);
   useEffect(() => {
-    if (prevPath != undefined) {
-      SaveFile(prevPath, content).then(() => {
-        getContent();
-        console.log("change content", prevPath);
-      });
-    } else {
-      getContent();
-    }
-  }, [filepath]);
+    getContent();
+  }, [filePath]);
 
-  if (filepath == "") {
+  if (filePath == "") {
     return <div></div>;
   }
   return (
@@ -66,9 +70,10 @@ export const Editor: React.FC = () => {
       extensions={[
         markdown({ base: markdownLanguage, codeLanguages: languages }),
         keymap.of(myKeymap),
-        linkify(filepath, setFilePath),
+        linkify(filePath, setFilePath),
       ]}
       onChange={onChange}
+      onBlur={onBlur}
       height="100%"
       basicSetup={{
         lineNumbers: false,

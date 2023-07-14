@@ -12,7 +12,7 @@ import {
 } from "@codemirror/view";
 
 export function linkify(
-  filepath: string,
+  filePath: string,
   setFilePath: SetterOrUpdater<string>
 ) {
   class LinkWidget extends WidgetType {
@@ -22,10 +22,11 @@ export function linkify(
     toDOM() {
       let link = document.createElement("a");
       link.onclick = async (event) => {
-        let path = await RelativePath(filepath, this.href);
+        let path = await RelativePath(filePath, this.href);
         console.log("click", path);
         setFilePath(path);
       };
+      // リンクをクリックしたときにカーソルが動かないようにする
       link.addEventListener("mousedown", (event) => {
         event.preventDefault();
       });
@@ -37,9 +38,10 @@ export function linkify(
     }
   }
 
+  const regex = /\[\[(.+?)\]\]/g;
+
   function createDeco(view: EditorView) {
     let decorations: Range<Decoration>[] = [];
-    let regex = /\[\[(.+?)\]\]/g;
     let match: RegExpExecArray | null;
 
     let cursor = view.state.selection.main.head;
@@ -66,13 +68,12 @@ export function linkify(
       return createDeco(update.view);
     }
     let decorations: Range<Decoration>[] = [];
-    let regex = /\[\[(.+?)\]\]/g;
     let match: RegExpExecArray | null;
 
     let previousCursor = update.startState.selection.main.head;
     let currentCursor = update.view.state.selection.main.head;
 
-    // 昔のカーソルのところを追加する。
+    // 前のカーソルのところを追加する
     let line = update.view.state.doc.lineAt(previousCursor);
     while ((match = regex.exec(line.text)) !== null) {
       if (
@@ -95,7 +96,7 @@ export function linkify(
         add: decorations,
       })
       .update({
-        // 今のカーソルのところを消す。
+        // 今のカーソルのところを消す
         filter: (from, to, value) => {
           return !(
             update.view.hasFocus &&
