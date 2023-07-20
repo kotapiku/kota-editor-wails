@@ -2,11 +2,11 @@ import { useState, useEffect } from "react";
 import { Editor } from "./components/Editor";
 import { OpenDirectory } from "../wailsjs/go/main/App";
 import { main } from "../wailsjs/go/models";
-import { Col, Row, Divider, Typography, Button, Layout, Menu } from "antd";
+import { Tree, Col, Row, Divider, Typography, Button, Layout } from "antd";
 import type { MenuProps } from "antd";
-import { MenuInfo } from "rc-menu/lib/interface";
+import type { DataNode, DirectoryTreeProps } from "antd/es/tree";
 import {
-  PlusOutlined,
+  FolderOpenOutlined,
   FolderOutlined,
   FileOutlined,
   CheckCircleOutlined,
@@ -20,15 +20,16 @@ import { useRecoilState } from "recoil";
 const { Header, Content, Sider, Footer } = Layout;
 type MenuItem = Required<MenuProps>["items"][number];
 const { Text } = Typography;
+const { DirectoryTree } = Tree;
 
 // TODO: if not md then disabled: true
-function fromFileToMenuItem(node: main.FileNode): MenuItem {
+function fromFileToDataNode(node: main.FileNode): DataNode {
   return {
     key: node.current_dir.absolute_path,
     icon: node.is_dir ? <FolderOutlined /> : <FileOutlined />,
-    label: node.current_dir.basename,
+    title: node.current_dir.basename,
     children: node.is_dir
-      ? node.children.map((child) => fromFileToMenuItem(child))
+      ? node.children.map((child) => fromFileToDataNode(child))
       : undefined,
   };
 }
@@ -36,17 +37,30 @@ function fromFileToMenuItem(node: main.FileNode): MenuItem {
 export function App() {
   const [filePath, setFilePath] = useRecoilState(fileAtom);
   const [fileStatus, setFileStatus] = useRecoilState(fileStatusAtom);
-  const [items, setItems] = useState<MenuItem[]>([]);
+  const [projects, setProjects] = useState<DataNode[]>([]);
 
   const onClickDir = async () => {
     let dir = await OpenDirectory();
     console.log("selected file: ", dir.current_dir);
-    setItems([...items, fromFileToMenuItem(dir)]);
+    if (
+      !projects.find((el) =>
+        el == null ? false : el.key == dir.current_dir.absolute_path
+      )
+    ) {
+      console.log(projects);
+      console.log(fromFileToDataNode(dir));
+      setProjects([...projects, fromFileToDataNode(dir)]);
+    }
+  };
+  const onExpand: DirectoryTreeProps["onExpand"] = (keys, info) => {
+    console.log("Trigger Expand", keys, info);
   };
 
-  const onClickFile: MenuProps["onClick"] = (e: MenuInfo) => {
-    console.log("selected file: ", e.key);
-    setFilePath(e.key);
+  const onClickFile: DirectoryTreeProps["onSelect"] = (keys, info) => {
+    console.log("selected file: ", info.node);
+    if (info.node.children == undefined) {
+      setFilePath(info.node.key);
+    }
   };
 
   function statusIcon(status: FileStatus) {
@@ -59,6 +73,21 @@ export function App() {
         return <LoadingOutlined />;
     }
   }
+
+  // keymap
+  useEffect(() => {
+    const hundleKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === "o") {
+        event.preventDefault();
+        console.log("open file");
+        onClickDir();
+      }
+    };
+    window.addEventListener("keydown", hundleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", hundleKeyDown);
+    };
+  }, [projects]);
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
@@ -75,21 +104,23 @@ export function App() {
               <Text strong type="secondary">
                 Projects
               </Text>
-              <Button
-                icon={<PlusOutlined />}
-                type="text"
-                onClick={onClickDir}
-                size="small"
-              />
+              <Text type="secondary">
+                <Button
+                  icon={<FolderOpenOutlined />}
+                  type="secondary"
+                  onClick={onClickDir}
+                  size="small"
+                />
+              </Text>
             </Row>
           </div>
           <Divider style={{ "marginBottom": "0px", "marginTop": "0px" }} />
-          <Menu
-            onClick={onClickFile}
+          <DirectoryTree
+            defaultExpandAll
+            onSelect={onClickFile}
+            onExpand={onExpand}
             selectedKeys={filePath == "" ? [] : [filePath]}
-            theme="light"
-            mode="inline"
-            items={items}
+            treeData={projects}
           />
         </div>
       </Sider>
