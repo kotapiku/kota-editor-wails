@@ -127,3 +127,17 @@ func (a *App) SaveFile(filepath string, content string) {
 	}
 	fmt.Printf("write %d bytes\n", count)
 }
+
+func (a *App) RenameFile(oldpath string, newpath string) {
+	err := os.Rename(oldpath, newpath)
+	if err != nil {
+		fmt.Println("fail to rename file: ", err)
+	}
+}
+
+func (a *App) DeleteFile(filepath string) {
+	err := os.Remove(filepath)
+	if err != nil {
+		fmt.Println("fail to delete file: ", err)
+	}
+}
