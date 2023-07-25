@@ -3,7 +3,6 @@ export namespace main {
 	export class File {
 	    basename: string;
 	    absolute_path: string;
-	    split_path: string[];
 	
 	    static createFrom(source: any = {}) {
 	        return new File(source);
@@ -13,11 +12,10 @@ export namespace main {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.basename = source["basename"];
 	        this.absolute_path = source["absolute_path"];
-	        this.split_path = source["split_path"];
 	    }
 	}
 	export class FileNode {
-	    current_dir: File;
+	    current_file: File;
 	    is_dir: boolean;
 	    children: FileNode[];
 	
@@ -27,7 +25,7 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.current_dir = this.convertValues(source["current_dir"], File);
+	        this.current_file = this.convertValues(source["current_file"], File);
 	        this.is_dir = source["is_dir"];
 	        this.children = this.convertValues(source["children"], FileNode);
 	    }

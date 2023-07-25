@@ -28,15 +28,15 @@ func (a *App) startup(ctx context.Context) {
 }
 
 type File struct {
-	BaseName     string   `json:"basename"`
-	AbsolutePath string   `json:"absolute_path"`
-	SplitPath    []string `json:"split_path"`
+	BaseName     string `json:"basename"`
+	AbsolutePath string `json:"absolute_path"`
+	SplitPath    []string
 }
 
 type FileNode struct {
-	CurrentDir File       `json:"current_dir"`
-	IsDir      bool       `json:"is_dir"`
-	Children   []FileNode `json:"children"`
+	Current  File       `json:"current_file"`
+	IsDir    bool       `json:"is_dir"`
+	Children []FileNode `json:"children"`
 }
 
 func buildTree(dir string) FileNode {
@@ -128,11 +128,13 @@ func (a *App) SaveFile(filepath string, content string) {
 	fmt.Printf("write %d bytes\n", count)
 }
 
-func (a *App) RenameFile(oldpath string, newpath string) {
+func (a *App) RenameFile(oldpath string, newname string) string {
+	newpath := filepath.Dir(oldpath) + "/" + newname
 	err := os.Rename(oldpath, newpath)
 	if err != nil {
 		fmt.Println("fail to rename file: ", err)
 	}
+	return newpath
 }
 
 func (a *App) DeleteFile(filepath string) {

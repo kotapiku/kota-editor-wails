@@ -6,13 +6,17 @@
     "@codemirror/state": "^6.2.1",
     "@uiw/react-codemirror": "^4.21.7",
     "antd": "^5.6.4",
+    "browserify": "^17.0.0",
     "html-react-parser": "^4.0.0",
+    "path": "^0.12.7",
+    "path-browserify": "^1.0.1",
     "react-hot-keys": "^2.7.2",
     "react-hotkeys": "^2.0.0",
     "react-hotkeys-hook": "^4.4.1",
     "recoil": "^0.7.7"
   },
   "devDependencies": {
-    "@types/node": "^20.4.1"
+    "@types/node": "^20.4.1",
+    "@types/path-parse": "^1.0.19"
   }
 }
