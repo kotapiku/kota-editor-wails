@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Menu,
   Tree,
@@ -15,7 +15,7 @@ import {
   FolderOutlined,
   FolderOpenOutlined,
 } from "@ant-design/icons";
-import { fileAtom, fileStatusAtom, FileStatus } from "../../FileAtom";
+import { fileAtom, fileStatusAtom } from "../../FileAtom";
 import { useRecoilState } from "recoil";
 import type { DataNode, DirectoryTreeProps } from "antd/es/tree";
 import {
@@ -41,12 +41,24 @@ function fromFileToDataNode(node: main.FileNode): DataNode {
   };
 }
 
+type RenameOrNewFile = RenameFile | NewFile;
+type RenameFile = {
+  kind: "rename";
+  filepath: string;
+};
+type NewFile = {
+  kind: "new";
+  filepath: string;
+  isDir: boolean;
+};
+
 export const Sidebar: React.FC = () => {
   const [filePath, setFilePath] = useRecoilState(fileAtom);
-  const [fileStatus, setFileStatus] = useRecoilState(fileStatusAtom);
+  const [_, setFileStatus] = useRecoilState(fileStatusAtom);
   const [projects, setProjects] = useState<DataNode[]>([]);
-  const [inputValue, setInputValue] = useState<string>("");
-  const [renameFile, setRenameFile] = useState<undefined | string>(undefined);
+  const [renameOrNewFile, setRenameOrNewFile] = useState<
+    undefined | RenameOrNewFile
+  >(undefined);
 
   const openProject = async () => {
     let dir = await OpenDirectory();
@@ -110,10 +122,61 @@ export const Sidebar: React.FC = () => {
       </Menu.Item>
     </Menu>
   );
+  const inputRenameOrNew = (node: { title: string; key: string }) => {
+    if (renameOrNewFile?.kind === "rename") {
+      return (
+        <Input
+          defaultValue={node.title}
+          onBlur={() => {
+            setRenameOrNewFile(undefined);
+          }}
+          autoFocus
+          onPressEnter={async (e: any) => {
+            let renamedAPath = await RenameFile(node.key, e.target.value);
+            let update = (el: DataNode) => {
+              return {
+                ...el,
+                key: renamedAPath,
+                title: e.target.value,
+              };
+            };
+            setProjects(updateNodeRecursive(projects, node.key, update));
+            setRenameOrNewFile(undefined);
+            console.log("rename", node.key, e.target.value);
+          }}
+        />
+      );
+    } else if (renameOrNewFile?.kind === "new") {
+      return (
+        <Input
+          defaultValue={node.title}
+          onBlur={() => {
+            setRenameOrNewFile(undefined);
+          }}
+          autoFocus
+          onPressEnter={async (e: any) => {
+            let renamedAPath = await RenameFile(node.key, e.target.value);
+            let update = (el: DataNode) => {
+              return {
+                ...el,
+                key: renamedAPath,
+                title: e.target.value,
+              };
+            };
+            setProjects(updateNodeRecursive(projects, node.key, update));
+            setRenameOrNewFile(undefined);
+            console.log("rename", node.key, e.target.value);
+          }}
+        />
+      );
+    } else {
+      return <Text>{node.title}</Text>;
+    }
+  };
 
   const rename = (filepath: string) => () => {
     console.log("edit name", filepath);
-    setRenameFile(filepath);
+    setRenameOrNewFile({ kind: "rename", filepath: filepath });
   };
   const deleteFile = (filepath: string) => async () => {
     console.log("delete file", filepath);
@@ -127,7 +190,7 @@ export const Sidebar: React.FC = () => {
   const newFile = (dirpath: string, isDir: boolean) => async () => {
     console.log("new file", dirpath);
     setProjects(newFileRecursive(projects, dirpath, isDir));
-    setRenameFile(dirpath + "/");
+    setRenameOrNewFile({ kind: "new", filepath: dirpath, isDir: isDir });
   };
   // delete: update=undefined, update: update=関数。
   function updateNodeRecursive(
@@ -213,31 +276,9 @@ export const Sidebar: React.FC = () => {
                   }
                   trigger={["contextMenu"]}
                 >
-                  {renameFile == node.key ? (
-                    <Input
-                      defaultValue={node.title}
-                      onChange={(e: any) => {
-                        setInputValue(e.target.value);
-                      }}
-                      onPressEnter={async (e: any) => {
-                        let renamedAPath = await RenameFile(
-                          node.key,
-                          e.target.value
-                        );
-                        let update = (el: DataNode) => {
-                          return {
-                            ...el,
-                            key: renamedAPath,
-                            title: e.target.value,
-                          };
-                        };
-                        setProjects(
-                          updateNodeRecursive(projects, node.key, update)
-                        );
-                        setRenameFile(undefined);
-                        console.log("rename", node.key, e.target.value);
-                      }}
-                    />
+                  {renameOrNewFile != undefined &&
+                  renameOrNewFile.filepath == node.key ? (
+                    inputRenameOrNew(node)
                   ) : (
                     <Text>{node.title}</Text>
                   )}

@@ -81,7 +81,12 @@ func (a *App) OpenDirectory() (FileNode, error) {
 	}
 
 	fmt.Printf("selected directory: %s\n", directory)
-	return buildTree(directory), nil
+	filenode, err := buildTree(directory)
+	if err != nil {
+		fmt.Println("fail to build a directory tree: ", err)
+		return FileNode{}, err
+	}
+	return filenode, nil
 }
 
 func splitPath(path string) []string {
