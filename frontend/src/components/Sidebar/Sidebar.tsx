@@ -74,7 +74,7 @@ export const Sidebar: React.FC = () => {
 
   const generateFileMenu = (filepath: string) => (
     <Menu>
-      <Menu.Item key="edit">
+      <Menu.Item key="rename">
         <Button onClick={rename(filepath)} type="text">
           rename
         </Button>
@@ -96,6 +96,11 @@ export const Sidebar: React.FC = () => {
       <Menu.Item key="new directory">
         <Button onClick={newFile(filepath, true)} type="text">
           new directory
+        </Button>
+      </Menu.Item>
+      <Menu.Item key="rename">
+        <Button onClick={rename(filepath)} type="text">
+          rename
         </Button>
       </Menu.Item>
       <Menu.Item key="delete">
@@ -124,8 +129,7 @@ export const Sidebar: React.FC = () => {
     setProjects(newFileRecursive(projects, dirpath, isDir));
     setRenameFile(dirpath + "/");
   };
-  // delete: file/dirを削除。update=undefined。
-  // update: file/dirを更新。update=関数。
+  // delete: update=undefined, update: update=関数。
   function updateNodeRecursive(
     nodes: DataNode[],
     keyToUpdate: string,
