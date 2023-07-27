@@ -7,7 +7,7 @@ import { keymap } from "@codemirror/view";
 import { defaultKeymap } from "@codemirror/commands";
 import { useRecoilState } from "recoil";
 import { fileAtom, fileStatusAtom } from "../../FileAtom";
-import { linkify } from "./Linkify";
+import { Linkify } from "./Linkify";
 
 export const Editor: React.FC = () => {
   const [filePath, setFilePath] = useRecoilState(fileAtom);
@@ -15,6 +15,9 @@ export const Editor: React.FC = () => {
   const [content, setContent] = useState<string>("");
 
   const getContent = async () => {
+    if (filePath == undefined) {
+      return;
+    }
     let content: string = await ReadFile(filePath);
     setContent(content);
   };
@@ -25,6 +28,9 @@ export const Editor: React.FC = () => {
   };
 
   const save = () => {
+    if (filePath == undefined) {
+      return;
+    }
     setFileStatus("Saving");
     SaveFile(filePath, content);
     setFileStatus("Saved");
@@ -60,7 +66,7 @@ export const Editor: React.FC = () => {
     getContent();
   }, [filePath]);
 
-  if (filePath == "") {
+  if (filePath == undefined) {
     return <div></div>;
   }
   return (
@@ -70,7 +76,7 @@ export const Editor: React.FC = () => {
       extensions={[
         markdown({ base: markdownLanguage, codeLanguages: languages }),
         keymap.of(myKeymap),
-        linkify(filePath, setFilePath),
+        Linkify,
       ]}
       onChange={onChange}
       onBlur={onBlur}

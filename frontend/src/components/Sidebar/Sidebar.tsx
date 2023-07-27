@@ -18,6 +18,7 @@ import {
 import { fileAtom, fileStatusAtom } from "../../FileAtom";
 import { useRecoilState } from "recoil";
 import type { DataNode, DirectoryTreeProps } from "antd/es/tree";
+import type { MenuProps } from "antd";
 import {
   OpenDirectory,
   RenameFile,
@@ -85,44 +86,63 @@ export const Sidebar: React.FC = () => {
     }
   };
 
-  const generateFileMenu = (filepath: string) => (
-    <Menu>
-      <Menu.Item key="rename">
-        <Button onClick={rename(filepath)} type="text">
-          rename
-        </Button>
-      </Menu.Item>
-      <Menu.Item key="delete">
-        <Button onClick={deleteFile(filepath)} type="text">
-          delete
-        </Button>
-      </Menu.Item>
-    </Menu>
-  );
-  const generateDirMenu = (filepath: string) => (
-    <Menu>
-      <Menu.Item key="new file">
-        <Button onClick={newFile(filepath, false)} type="text">
-          new file
-        </Button>
-      </Menu.Item>
-      <Menu.Item key="new directory">
-        <Button onClick={newFile(filepath, true)} type="text">
-          new directory
-        </Button>
-      </Menu.Item>
-      <Menu.Item key="rename">
-        <Button onClick={rename(filepath)} type="text">
-          rename
-        </Button>
-      </Menu.Item>
-      <Menu.Item key="delete">
-        <Button onClick={deleteFile(filepath)} type="text">
-          delete
-        </Button>
-      </Menu.Item>
-    </Menu>
-  );
+  const generateFileMenu = (filepath: string): MenuProps["items"] => {
+    return [
+      {
+        key: "rename",
+        label: (
+          <Button onClick={rename(filepath)} type="text">
+            rename
+          </Button>
+        ),
+      },
+      {
+        key: "delete",
+        label: (
+          <Button onClick={deleteFile(filepath)} type="text">
+            delete
+          </Button>
+        ),
+      },
+    ];
+  };
+  const generateDirMenu = (filepath: string): MenuProps["items"] => {
+    return [
+      {
+        key: "new file",
+        label: (
+          <Button onClick={newFile(filepath, false)} type="text">
+            new file
+          </Button>
+        ),
+      },
+      {
+        key: "new directory",
+        label: (
+          <Button onClick={newFile(filepath, true)} type="text">
+            new directory
+          </Button>
+        ),
+      },
+      {
+        key: "rename",
+        label: (
+          <Button onClick={rename(filepath)} type="text">
+            rename
+          </Button>
+        ),
+      },
+      {
+        key: "delete",
+        label: (
+          <Button onClick={deleteFile(filepath)} type="text">
+            delete
+          </Button>
+        ),
+      },
+    ];
+  };
+
   const inputRenameOrNew = (node: { title: string; key: string }) => {
     if (renameOrNewFile?.kind === "rename") {
       return (
@@ -181,7 +201,8 @@ export const Sidebar: React.FC = () => {
     }
   };
 
-  const rename = (filepath: string) => () => {
+  const rename = (filepath: string) => (e: MouseEvent) => {
+    console.log(e);
     console.log("edit name", filepath);
     setRenameOrNewFile({ kind: "rename", filepath: filepath });
   };
@@ -278,25 +299,27 @@ export const Sidebar: React.FC = () => {
             children: undefined | DataNode[];
           }) => {
             return (
-              <>
-                <Dropdown
-                  overlay={
+              <Dropdown
+                menu={{
+                  items:
                     node.children == undefined
                       ? generateFileMenu(node.key)
-                      : generateDirMenu(node.key)
-                  }
-                  trigger={["contextMenu"]}
-                >
-                  {(renameOrNewFile?.kind === "rename" &&
-                    renameOrNewFile?.filepath == node.key) ||
-                  (renameOrNewFile?.kind === "new" &&
-                    renameOrNewFile?.filepath + "/" == node.key) ? (
-                    inputRenameOrNew(node)
-                  ) : (
-                    <Text>{node.title}</Text>
-                  )}
-                </Dropdown>
-              </>
+                      : generateDirMenu(node.key),
+                  onClick: (e: { domEvent: MouseEvent }) => {
+                    e.domEvent.stopPropagation();
+                  },
+                }}
+                trigger={["contextMenu"]}
+              >
+                {(renameOrNewFile?.kind === "rename" &&
+                  renameOrNewFile?.filepath == node.key) ||
+                (renameOrNewFile?.kind === "new" &&
+                  renameOrNewFile?.filepath + "/" == node.key) ? (
+                  inputRenameOrNew(node)
+                ) : (
+                  <Text>{node.title}</Text>
+                )}
+              </Dropdown>
             );
           }}
           defaultExpandAll
