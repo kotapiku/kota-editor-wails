@@ -41,24 +41,21 @@ type FileNode struct {
 
 func buildTree(dir string) (FileNode, error) {
 	node := FileNode{buildFile(dir), true, []FileNode{}}
-	flag := false
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-		fmt.Println("search: ", path)
 		if err != nil {
 			return err
 		}
 		if path == dir {
 			return nil
 		}
-		node, flag = addPath(node, path, info.IsDir())
-		fmt.Println("add: ", node, flag)
+		node, _ = addPath(node, path, info.IsDir())
 		return nil
 	})
 	if err != nil {
 		fmt.Println("fail to build a directory tree: ", err)
 		return FileNode{}, err
 	}
-	fmt.Println(node, flag)
+	fmt.Println("builded tree: ", node)
 
 	return node, nil
 }
