@@ -7,7 +7,7 @@ import { keymap } from "@codemirror/view";
 import { defaultKeymap } from "@codemirror/commands";
 import { useRecoilState } from "recoil";
 import { fileAtom, fileStatusAtom } from "../../FileAtom";
-import { Linkify } from "./Linkify";
+import { linkify } from "./Linkify";
 
 export const Editor: React.FC = () => {
   const [filePath, setFilePath] = useRecoilState(fileAtom);
@@ -43,9 +43,6 @@ export const Editor: React.FC = () => {
     {
       key: "Mod-s",
       run: () => {
-        if (filePath == "") {
-          return true;
-        }
         save();
         return true;
       },
@@ -53,30 +50,20 @@ export const Editor: React.FC = () => {
     ...defaultKeymap,
   ];
 
-  function usePrevious(value: any) {
-    const ref = useRef();
-    useEffect(() => {
-      ref.current = value;
-    }, [value]);
-    return ref.current;
-  }
-
-  const prevPath = usePrevious(filePath);
   useEffect(() => {
     getContent();
   }, [filePath]);
 
-  if (filePath == undefined) {
-    return <div></div>;
-  }
-  return (
+  return filePath == undefined ? (
+    <div></div>
+  ) : (
     <CodeMirror
       value={content}
       keymap=""
       extensions={[
         markdown({ base: markdownLanguage, codeLanguages: languages }),
         keymap.of(myKeymap),
-        Linkify,
+        linkify(filePath, setFilePath),
       ]}
       onChange={onChange}
       onBlur={onBlur}

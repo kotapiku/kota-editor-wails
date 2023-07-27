@@ -90,19 +90,11 @@ export const Sidebar: React.FC = () => {
     return [
       {
         key: "rename",
-        label: (
-          <Button onClick={rename(filepath)} type="text">
-            rename
-          </Button>
-        ),
+        label: <span onClick={(e) => rename(filepath)}>rename</span>,
       },
       {
         key: "delete",
-        label: (
-          <Button onClick={deleteFile(filepath)} type="text">
-            delete
-          </Button>
-        ),
+        label: <span onClick={(e) => deleteFile(filepath)}>delete</span>,
       },
     ];
   };
@@ -110,35 +102,21 @@ export const Sidebar: React.FC = () => {
     return [
       {
         key: "new file",
-        label: (
-          <Button onClick={newFile(filepath, false)} type="text">
-            new file
-          </Button>
-        ),
+        label: <span onClick={(e) => newFile(filepath, false)}>new file</span>,
       },
       {
         key: "new directory",
         label: (
-          <Button onClick={newFile(filepath, true)} type="text">
-            new directory
-          </Button>
+          <span onClick={(e) => newFile(filepath, true)}>new directory</span>
         ),
       },
       {
         key: "rename",
-        label: (
-          <Button onClick={rename(filepath)} type="text">
-            rename
-          </Button>
-        ),
+        label: <span onClick={(e) => rename(filepath)}>rename</span>,
       },
       {
         key: "delete",
-        label: (
-          <Button onClick={deleteFile(filepath)} type="text">
-            delete
-          </Button>
-        ),
+        label: <span onClick={(e) => deleteFile(filepath)}>delete</span>,
       },
     ];
   };
@@ -201,12 +179,10 @@ export const Sidebar: React.FC = () => {
     }
   };
 
-  const rename = (filepath: string) => (e: MouseEvent) => {
-    console.log(e);
-    console.log("edit name", filepath);
+  const rename = (filepath: string) => {
     setRenameOrNewFile({ kind: "rename", filepath: filepath });
   };
-  const deleteFile = (filepath: string) => async () => {
+  const deleteFile = async (filepath: string) => {
     console.log("delete file", filepath);
     await DeleteFile(filepath);
     setProjects(updateNodeRecursive(projects, filepath, undefined));

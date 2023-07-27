@@ -1,10 +1,8 @@
 import { WidgetType } from "@codemirror/view";
 import { RelativePath } from "../../../wailsjs/go/main/App";
 import { SetterOrUpdater } from "recoil";
-import { useRecoilState } from "recoil";
-import { fileAtom, fileStatusAtom } from "../../FileAtom";
 
-import { Range } from "@codemirror/state";
+import { Range, type Extension } from "@codemirror/state";
 import {
   EditorView,
   Decoration,
@@ -13,8 +11,10 @@ import {
   ViewUpdate,
 } from "@codemirror/view";
 
-export const Linkify = () => {
-  const [filePath, setFilePath] = useRecoilState(fileAtom);
+export function linkify(
+  filePath: string,
+  setFilePath: SetterOrUpdater<string | undefined>
+): Extension {
   class LinkWidget extends WidgetType {
     constructor(public href: string) {
       super();
@@ -129,4 +129,4 @@ export const Linkify = () => {
         }),
     }
   );
-};
+}
