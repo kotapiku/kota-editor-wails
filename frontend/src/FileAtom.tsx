@@ -1,8 +1,8 @@
 import { atom } from "recoil";
 
-export const fileAtom = atom<string>({
+export const fileAtom = atom<string | undefined>({
   key: "filePath",
-  default: "",
+  default: undefined,
 });
 
 export type FileStatus = "Saved" | "Unsaved" | "Saving";

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Menu,
   Tree,
@@ -21,6 +21,7 @@ import type { DataNode, DirectoryTreeProps } from "antd/es/tree";
 import {
   OpenDirectory,
   RenameFile,
+  NewFileDir,
   DeleteFile,
 } from "../../../wailsjs/go/main/App";
 import { main } from "../../../wailsjs/go/models";
@@ -142,7 +143,7 @@ export const Sidebar: React.FC = () => {
             };
             setProjects(updateNodeRecursive(projects, node.key, update));
             setRenameOrNewFile(undefined);
-            console.log("rename", node.key, e.target.value);
+            console.log("rename", renamedAPath);
           }}
         />
       );
@@ -151,21 +152,27 @@ export const Sidebar: React.FC = () => {
         <Input
           defaultValue={node.title}
           onBlur={() => {
+            console.log("cancel to new ", node.key);
+            setProjects(updateNodeRecursive(projects, node.key, undefined));
             setRenameOrNewFile(undefined);
+            setFilePath(undefined);
           }}
           autoFocus
           onPressEnter={async (e: any) => {
-            let renamedAPath = await RenameFile(node.key, e.target.value);
+            let savedAPath = await NewFileDir(
+              node.key + e.target.value,
+              renameOrNewFile.isDir
+            );
             let update = (el: DataNode) => {
               return {
                 ...el,
-                key: renamedAPath,
+                key: node.key + e.target.value,
                 title: e.target.value,
               };
             };
             setProjects(updateNodeRecursive(projects, node.key, update));
             setRenameOrNewFile(undefined);
-            console.log("rename", node.key, e.target.value);
+            console.log("new", savedAPath);
           }}
         />
       );
@@ -183,13 +190,14 @@ export const Sidebar: React.FC = () => {
     await DeleteFile(filepath);
     setProjects(updateNodeRecursive(projects, filepath, undefined));
     if (filepath == filePath) {
-      setFilePath("");
+      setFilePath(undefined);
       setFileStatus("Saved");
     }
   };
   const newFile = (dirpath: string, isDir: boolean) => async () => {
-    console.log("new file", dirpath);
+    console.log("new file in ", dirpath);
     setProjects(newFileRecursive(projects, dirpath, isDir));
+    console.log(projects);
     setRenameOrNewFile({ kind: "new", filepath: dirpath, isDir: isDir });
   };
   // delete: update=undefined, update: update=関数。
@@ -201,8 +209,7 @@ export const Sidebar: React.FC = () => {
     return nodes.flatMap((node) => {
       if (node.key === keyToUpdate) {
         return update == undefined ? [] : update(node);
-      }
-      if (node.children) {
+      } else if (node.children) {
         node.children = updateNodeRecursive(node.children, keyToUpdate, update);
       }
       return node;
@@ -215,11 +222,11 @@ export const Sidebar: React.FC = () => {
     isDir: boolean
   ): DataNode[] {
     return nodes.map((node) => {
-      if (node.key === keyToDir && node.children) {
+      if (node.key == keyToDir && node.children) {
         let newFile = new main.FileNode({
           current_file: { basename: "", absolute_path: keyToDir + "/" },
           is_dir: isDir,
-          children: [],
+          children: isDir ? [] : undefined,
         });
         node.children.push(fromFileToDataNode(newFile));
         return node;
@@ -230,6 +237,10 @@ export const Sidebar: React.FC = () => {
       return node;
     });
   }
+
+  useEffect(() => {
+    console.log("projects", projects);
+  }, [projects]);
 
   return (
     <Sider theme="light">
@@ -259,7 +270,7 @@ export const Sidebar: React.FC = () => {
         <DirectoryTree
           onSelect={onClickFile}
           onExpand={onExpand}
-          selectedKeys={filePath == "" ? [] : [filePath]}
+          selectedKeys={filePath == undefined ? [] : [filePath]}
           treeData={projects}
           titleRender={(node: {
             title: string;
@@ -276,8 +287,10 @@ export const Sidebar: React.FC = () => {
                   }
                   trigger={["contextMenu"]}
                 >
-                  {renameOrNewFile != undefined &&
-                  renameOrNewFile.filepath == node.key ? (
+                  {(renameOrNewFile?.kind === "rename" &&
+                    renameOrNewFile?.filepath == node.key) ||
+                  (renameOrNewFile?.kind === "new" &&
+                    renameOrNewFile?.filepath + "/" == node.key) ? (
                     inputRenameOrNew(node)
                   ) : (
                     <Text>{node.title}</Text>

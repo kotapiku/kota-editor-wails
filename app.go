@@ -126,6 +126,23 @@ func (a *App) ReadFile(filepath string) (string, error) {
 	return string(content), nil
 }
 
+func (a *App) NewFileDir(filepath string, isDir bool) error {
+	if isDir {
+		if err := os.Mkdir(filepath, 0777); err != nil {
+			fmt.Println("fail to create directory: ", err)
+			return err
+		}
+		return nil
+	}
+	fp, err := os.Create(filepath)
+	if err != nil {
+		fmt.Println("fail to create file: ", err)
+		return err
+	}
+	fp.Close()
+	return nil
+}
+
 func (a *App) SaveFile(filepath string, content string) error {
 	file, err := os.Create(filepath)
 	if err != nil {
