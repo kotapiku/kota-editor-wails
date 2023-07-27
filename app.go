@@ -40,31 +40,42 @@ type FileNode struct {
 }
 
 func buildTree(dir string) (FileNode, error) {
-	children := []FileNode{}
+	node := FileNode{buildFile(dir), true, []FileNode{}}
+	flag := false
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		fmt.Println("search: ", path)
 		if err != nil {
 			return err
 		}
 		if path == dir {
 			return nil
 		}
-		if info.IsDir() {
-			next, err := buildTree(path)
-			if err != nil {
-				return err
-			}
-			children = append(children, next)
-		} else {
-			children = append(children, FileNode{buildFile(path), false, []FileNode{}})
-		}
+		node, flag = addPath(node, path, info.IsDir())
+		fmt.Println("add: ", node, flag)
 		return nil
 	})
 	if err != nil {
 		fmt.Println("fail to build a directory tree: ", err)
 		return FileNode{}, err
 	}
+	fmt.Println(node, flag)
 
-	return FileNode{buildFile(dir), true, children}, nil
+	return node, nil
+}
+
+func addPath(node FileNode, path string, isDir bool) (FileNode, bool) {
+	if node.Current.AbsolutePath == filepath.Dir(path) {
+		node.Children = append(node.Children, FileNode{buildFile(path), isDir, []FileNode{}})
+		return node, true
+	}
+	flag := false
+	for i, c := range node.Children {
+		node.Children[i], flag = addPath(c, path, isDir)
+		if flag {
+			break
+		}
+	}
+	return node, flag
 }
 
 func (a *App) OpenDirectory() (FileNode, error) {

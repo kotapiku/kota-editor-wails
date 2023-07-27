@@ -70,8 +70,8 @@ export const Sidebar: React.FC = () => {
         el == null ? false : el.key == dir.current_file.absolute_path
       )
     ) {
-      console.log(projects);
-      console.log(fromFileToDataNode(dir));
+      console.log(dir);
+      console.log("open", projects, fromFileToDataNode(dir));
       setProjects([...projects, fromFileToDataNode(dir)]);
     }
   };
@@ -90,11 +90,11 @@ export const Sidebar: React.FC = () => {
     return [
       {
         key: "rename",
-        label: <span onClick={(e) => rename(filepath)}>rename</span>,
+        label: "rename",
       },
       {
         key: "delete",
-        label: <span onClick={(e) => deleteFile(filepath)}>delete</span>,
+        label: "delete",
       },
     ];
   };
@@ -102,21 +102,19 @@ export const Sidebar: React.FC = () => {
     return [
       {
         key: "new file",
-        label: <span onClick={(e) => newFile(filepath, false)}>new file</span>,
+        label: "new file",
       },
       {
         key: "new directory",
-        label: (
-          <span onClick={(e) => newFile(filepath, true)}>new directory</span>
-        ),
+        label: "new directory",
       },
       {
         key: "rename",
-        label: <span onClick={(e) => rename(filepath)}>rename</span>,
+        label: "rename",
       },
       {
         key: "delete",
-        label: <span onClick={(e) => deleteFile(filepath)}>delete</span>,
+        label: "delete",
       },
     ];
   };
@@ -183,7 +181,6 @@ export const Sidebar: React.FC = () => {
     setRenameOrNewFile({ kind: "rename", filepath: filepath });
   };
   const deleteFile = async (filepath: string) => {
-    console.log("delete file", filepath);
     await DeleteFile(filepath);
     setProjects(updateNodeRecursive(projects, filepath, undefined));
     if (filepath == filePath) {
@@ -191,10 +188,8 @@ export const Sidebar: React.FC = () => {
       setFileStatus("Saved");
     }
   };
-  const newFile = (dirpath: string, isDir: boolean) => async () => {
-    console.log("new file in ", dirpath);
+  const newFile = async (dirpath: string, isDir: boolean) => {
     setProjects(newFileRecursive(projects, dirpath, isDir));
-    console.log(projects);
     setRenameOrNewFile({ kind: "new", filepath: dirpath, isDir: isDir });
   };
   // delete: update=undefined, update: update=関数。
@@ -281,8 +276,18 @@ export const Sidebar: React.FC = () => {
                     node.children == undefined
                       ? generateFileMenu(node.key)
                       : generateDirMenu(node.key),
-                  onClick: (e: { domEvent: MouseEvent }) => {
+                  onClick: (e: { key: string; domEvent: MouseEvent }) => {
                     e.domEvent.stopPropagation();
+                    console.log(e.key, node.key);
+                    if (e.key === "rename") {
+                      rename(node.key);
+                    } else if (e.key === "delete") {
+                      deleteFile(node.key);
+                    } else if (e.key === "new file") {
+                      newFile(node.key, false);
+                    } else if (e.key === "new directory") {
+                      newFile(node.key, true);
+                    }
                   },
                 }}
                 trigger={["contextMenu"]}
