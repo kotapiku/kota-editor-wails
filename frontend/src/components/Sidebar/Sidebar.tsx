@@ -24,6 +24,7 @@ import {
   RenameFile,
   NewFileDir,
   DeleteFile,
+  GetConfig,
 } from "../../../wailsjs/go/main/App";
 import { main } from "../../../wailsjs/go/models";
 
@@ -53,6 +54,14 @@ type NewFile = {
   filepath: string;
   isDir: boolean;
 };
+
+async function getProjects(): Promise<DataNode[]> {
+  let config = await GetConfig();
+  console.log("config", config);
+  return config.projects.map((project: main.FileNode) =>
+    fromFileToDataNode(project)
+  );
+}
 
 export const Sidebar: React.FC = () => {
   const [filePath, setFilePath] = useRecoilState(fileAtom);
@@ -231,8 +240,8 @@ export const Sidebar: React.FC = () => {
   }
 
   useEffect(() => {
-    console.log("projects", projects);
-  }, [projects]);
+    getProjects().then((projects) => setProjects(projects));
+  }, []);
 
   return (
     <Sider theme="light">

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	toml "github.com/pelletier/go-toml"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -39,6 +40,49 @@ type FileNode struct {
 	Children []FileNode `json:"children"`
 }
 
+type tomlConfig struct {
+	Projects []string
+}
+type Config struct {
+	Projects []FileNode `json:"projects"`
+}
+
+func (*App) GetConfig() (Config, error) {
+	// get config from ~/.kota_editor/config.toml
+	var tcfg tomlConfig
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return Config{}, err
+	}
+	pathConfig := home + "/.kota_editor/config.toml"
+	doc, err := os.ReadFile(pathConfig)
+	if err != nil {
+		fmt.Println("fail to read file")
+		return Config{}, err
+	}
+	if err := toml.Unmarshal([]byte(doc), &tcfg); err != nil {
+		return Config{}, err
+	}
+	cfg, err := translateConfig(tcfg)
+	if err != nil {
+		return Config{}, err
+	}
+	return cfg, nil
+}
+
+func translateConfig(toml tomlConfig) (Config, error) {
+	var config Config
+	for _, p := range toml.Projects {
+		node, err := buildTree(p)
+		if err != nil {
+			fmt.Println("fail to build a directory tree: ", err)
+			return Config{}, err
+		}
+		config.Projects = append(config.Projects, node)
+	}
+	return config, nil
+}
+
 func buildTree(dir string) (FileNode, error) {
 	node := FileNode{buildFile(dir), true, []FileNode{}}
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
@@ -55,8 +99,6 @@ func buildTree(dir string) (FileNode, error) {
 		fmt.Println("fail to build a directory tree: ", err)
 		return FileNode{}, err
 	}
-	fmt.Println("builded tree: ", node)
-
 	return node, nil
 }
 
