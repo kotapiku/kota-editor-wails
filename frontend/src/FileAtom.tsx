@@ -1,4 +1,6 @@
 import { atom } from "recoil";
+import { main } from "../wailsjs/go/models";
+import { GetConfig, SaveConfig } from "../wailsjs/go/main/App";
 
 export const fileAtom = atom<string | undefined>({
   key: "filePath",
@@ -9,4 +11,16 @@ export type FileStatus = "Saved" | "Unsaved" | "Saving";
 export const fileStatusAtom = atom<FileStatus>({
   key: "fileStatus",
   default: "Saved",
+});
+
+export const configAtom = atom<main.Config>({
+  key: "config",
+  default: GetConfig(),
+  effects: [
+    ({ onSet }) => {
+      onSet((newValue, _) => {
+        SaveConfig(newValue);
+      });
+    },
+  ],
 });

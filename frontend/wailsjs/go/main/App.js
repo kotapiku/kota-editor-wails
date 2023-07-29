@@ -10,6 +10,10 @@ export function GetConfig() {
   return window['go']['main']['App']['GetConfig']();
 }
 
+export function GetProject(arg1) {
+  return window['go']['main']['App']['GetProject'](arg1);
+}
+
 export function NewFileDir(arg1, arg2) {
   return window['go']['main']['App']['NewFileDir'](arg1, arg2);
 }
@@ -28,6 +32,10 @@ export function RelativePath(arg1, arg2) {
 
 export function RenameFile(arg1, arg2) {
   return window['go']['main']['App']['RenameFile'](arg1, arg2);
+}
+
+export function SaveConfig(arg1) {
+  return window['go']['main']['App']['SaveConfig'](arg1);
 }
 
 export function SaveFile(arg1, arg2) {

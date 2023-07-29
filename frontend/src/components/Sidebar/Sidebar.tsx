@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import {
-  Menu,
   Tree,
   Typography,
   Input,
@@ -14,8 +13,9 @@ import {
   FileOutlined,
   FolderOutlined,
   FolderOpenOutlined,
+  DownOutlined,
 } from "@ant-design/icons";
-import { fileAtom, fileStatusAtom } from "../../FileAtom";
+import { fileAtom, fileStatusAtom, configAtom } from "../../FileAtom";
 import { useRecoilState } from "recoil";
 import type { DataNode, DirectoryTreeProps } from "antd/es/tree";
 import type { MenuProps } from "antd";
@@ -24,7 +24,7 @@ import {
   RenameFile,
   NewFileDir,
   DeleteFile,
-  GetConfig,
+  GetProject,
 } from "../../../wailsjs/go/main/App";
 import { main } from "../../../wailsjs/go/models";
 
@@ -36,7 +36,7 @@ const { DirectoryTree } = Tree;
 function fromFileToDataNode(node: main.FileNode): DataNode {
   return {
     key: node.current_file.absolute_path,
-    icon: node.is_dir ? <FolderOutlined /> : <FileOutlined />,
+    icon: node.is_dir ? <></> : <FileOutlined />,
     children: node.is_dir // undefined if node is file
       ? node.children.map((child) => fromFileToDataNode(child))
       : undefined,
@@ -55,34 +55,23 @@ type NewFile = {
   isDir: boolean;
 };
 
-async function getProjects(): Promise<DataNode[]> {
-  let config = await GetConfig();
-  console.log("config", config);
-  return config.projects.map((project: main.FileNode) =>
-    fromFileToDataNode(project)
-  );
-}
-
 export const Sidebar: React.FC = () => {
   const [filePath, setFilePath] = useRecoilState(fileAtom);
   const [_, setFileStatus] = useRecoilState(fileStatusAtom);
-  const [projects, setProjects] = useState<DataNode[]>([]);
+  const [config, setConfig] = useRecoilState(configAtom);
+  const [dataNode, setDataNode] = useState<DataNode | undefined>(undefined);
   const [renameOrNewFile, setRenameOrNewFile] = useState<
-    undefined | RenameOrNewFile
+    RenameOrNewFile | undefined
   >(undefined);
 
   const openProject = async () => {
     let dir = await OpenDirectory();
-    console.log("selected file: ", dir.current_file);
-    if (
-      !projects.find((el) =>
-        el == null ? false : el.key == dir.current_file.absolute_path
-      )
-    ) {
-      console.log(dir);
-      console.log("open", projects, fromFileToDataNode(dir));
-      setProjects([...projects, fromFileToDataNode(dir)]);
-    }
+    console.log("open project: ", dir.current_file);
+    setConfig(
+      main.Config.createFrom({
+        project_path: dir.current_file.absolute_path,
+      })
+    );
   };
   const onExpand: DirectoryTreeProps["onExpand"] = (keys, info) => {
     console.log("Trigger Expand", keys, info);
@@ -146,9 +135,21 @@ export const Sidebar: React.FC = () => {
                 title: e.target.value,
               };
             };
-            setProjects(updateNodeRecursive(projects, node.key, update));
-            setRenameOrNewFile(undefined);
-            console.log("rename", renamedAPath);
+            if (config.project_path == node.key) {
+              console.log("change config by rename", renamedAPath);
+              setConfig(
+                main.Config.createFrom({
+                  project_path: renamedAPath,
+                })
+              );
+              setRenameOrNewFile(undefined);
+            } else {
+              if (dataNode != undefined) {
+                console.log("change datanode by rename", renamedAPath);
+                setDataNode(updateNodeRecursive(dataNode, node.key, update));
+                setRenameOrNewFile(undefined);
+              }
+            }
           }}
         />
       );
@@ -157,10 +158,11 @@ export const Sidebar: React.FC = () => {
         <Input
           defaultValue={node.title}
           onBlur={() => {
-            console.log("cancel to new ", node.key);
-            setProjects(updateNodeRecursive(projects, node.key, undefined));
-            setRenameOrNewFile(undefined);
-            setFilePath(undefined);
+            if (dataNode != undefined) {
+              console.log("cancel to new ", node.key);
+              setDataNode(updateNodeRecursive(dataNode, node.key, undefined));
+              setRenameOrNewFile(undefined);
+            }
           }}
           autoFocus
           onPressEnter={async (e: any) => {
@@ -175,9 +177,11 @@ export const Sidebar: React.FC = () => {
                 title: e.target.value,
               };
             };
-            setProjects(updateNodeRecursive(projects, node.key, update));
-            setRenameOrNewFile(undefined);
-            console.log("new", savedAPath);
+            if (dataNode != undefined) {
+              console.log("new", savedAPath);
+              setDataNode(updateNodeRecursive(dataNode, node.key, update));
+              setRenameOrNewFile(undefined);
+            }
           }}
         />
       );
@@ -191,57 +195,90 @@ export const Sidebar: React.FC = () => {
   };
   const deleteFile = async (filepath: string) => {
     await DeleteFile(filepath);
-    setProjects(updateNodeRecursive(projects, filepath, undefined));
+
+    if (config.project_path == filepath) {
+      console.log("change config by delete");
+      setConfig(main.Config.createFrom({}));
+    } else {
+      console.log("change datanode by delete");
+      if (dataNode != undefined) {
+        setDataNode(updateNodeRecursive(dataNode, filepath, undefined));
+      }
+    }
     if (filepath == filePath) {
       setFilePath(undefined);
-      setFileStatus("Saved");
     }
   };
   const newFile = async (dirpath: string, isDir: boolean) => {
-    setProjects(newFileRecursive(projects, dirpath, isDir));
-    setRenameOrNewFile({ kind: "new", filepath: dirpath, isDir: isDir });
+    if (dataNode != undefined) {
+      setDataNode(newFileRecursive(dataNode, dirpath, isDir));
+      setRenameOrNewFile({ kind: "new", filepath: dirpath, isDir: isDir });
+    }
   };
   // delete: update=undefined, update: update=関数。
   function updateNodeRecursive(
-    nodes: DataNode[],
+    node: DataNode,
     keyToUpdate: string,
     update: ((param: DataNode) => DataNode) | undefined
-  ): DataNode[] {
-    return nodes.flatMap((node) => {
-      if (node.key === keyToUpdate) {
-        return update == undefined ? [] : update(node);
-      } else if (node.children) {
-        node.children = updateNodeRecursive(node.children, keyToUpdate, update);
+  ): DataNode {
+    if (node.key === keyToUpdate) {
+      return update == undefined ? node : update(node);
+    } else if (node.children) {
+      if (update == undefined) {
+        node.children = node.children.filter((child) => {
+          return child.key != keyToUpdate;
+        });
       }
-      return node;
-    });
+      node.children = node.children.map((child) =>
+        updateNodeRecursive(child, keyToUpdate, update)
+      );
+    }
+    return node;
   }
 
   function newFileRecursive(
-    nodes: DataNode[],
+    node: DataNode,
     keyToDir: string,
     isDir: boolean
-  ): DataNode[] {
-    return nodes.map((node) => {
-      if (node.key == keyToDir && node.children) {
-        let newFile = new main.FileNode({
-          current_file: { basename: "", absolute_path: keyToDir + "/" },
-          is_dir: isDir,
-          children: isDir ? [] : undefined,
-        });
-        node.children.push(fromFileToDataNode(newFile));
-        return node;
-      }
-      if (node.children) {
-        node.children = newFileRecursive(node.children, keyToDir, isDir);
-      }
+  ): DataNode {
+    if (node.key == keyToDir && node.children) {
+      let newFile = new main.FileNode({
+        current_file: { basename: "", absolute_path: keyToDir + "/" },
+        is_dir: isDir,
+        children: isDir ? [] : undefined,
+      });
+      node.children.push(fromFileToDataNode(newFile));
       return node;
-    });
+    }
+    if (node.children) {
+      node.children = node.children.map((child) =>
+        newFileRecursive(child, keyToDir, isDir)
+      );
+    }
+    return node;
   }
 
   useEffect(() => {
-    getProjects().then((projects) => setProjects(projects));
+    if (config.project_path != "") {
+      GetProject(config).then((project) => {
+        console.log("get project", project);
+        setDataNode(fromFileToDataNode(project));
+      });
+    }
   }, []);
+
+  useEffect(() => {
+    if (config.project_path != "") {
+      GetProject(config).then((project) => {
+        console.log("get project", project);
+        setDataNode(fromFileToDataNode(project));
+      });
+    }
+  }, [config]);
+
+  useEffect(() => {
+    setFileStatus("Saved");
+  }, [filePath]);
 
   return (
     <Sider theme="light">
@@ -255,7 +292,7 @@ export const Sidebar: React.FC = () => {
             }}
           >
             <Text strong type="secondary">
-              Projects
+              Project
             </Text>
             <Text type="secondary">
               <Button
@@ -269,10 +306,12 @@ export const Sidebar: React.FC = () => {
         </div>
         <Divider style={{ "marginBottom": "0px", "marginTop": "0px" }} />
         <DirectoryTree
+          showLine
+          switcherIcon={<DownOutlined />}
           onSelect={onClickFile}
           onExpand={onExpand}
           selectedKeys={filePath == undefined ? [] : [filePath]}
-          treeData={projects}
+          treeData={dataNode == undefined ? [] : [dataNode]}
           titleRender={(node: {
             title: string;
             key: string;

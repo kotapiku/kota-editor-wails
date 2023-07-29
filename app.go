@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"path/filepath"
-	"strings"
 
 	toml "github.com/pelletier/go-toml"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -31,7 +30,6 @@ func (a *App) startup(ctx context.Context) {
 type File struct {
 	BaseName     string `json:"basename"`
 	AbsolutePath string `json:"absolute_path"`
-	SplitPath    []string
 }
 
 type FileNode struct {
@@ -40,47 +38,63 @@ type FileNode struct {
 	Children []FileNode `json:"children"`
 }
 
-type tomlConfig struct {
-	Projects []string
-}
 type Config struct {
-	Projects []FileNode `json:"projects"`
+	ProjectPath string `json:"project_path"`
+}
+
+func configPath() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return home + "/.kota_editor/config.toml", nil
 }
 
 func (*App) GetConfig() (Config, error) {
 	// get config from ~/.kota_editor/config.toml
-	var tcfg tomlConfig
-	home, err := os.UserHomeDir()
+	var cfg Config
+	configPath, err := configPath()
 	if err != nil {
 		return Config{}, err
 	}
-	pathConfig := home + "/.kota_editor/config.toml"
-	doc, err := os.ReadFile(pathConfig)
+	doc, err := os.ReadFile(configPath)
 	if err != nil {
 		fmt.Println("fail to read file")
 		return Config{}, err
 	}
-	if err := toml.Unmarshal([]byte(doc), &tcfg); err != nil {
+	if err := toml.Unmarshal([]byte(doc), &cfg); err != nil {
 		return Config{}, err
 	}
-	cfg, err := translateConfig(tcfg)
 	if err != nil {
 		return Config{}, err
 	}
 	return cfg, nil
 }
 
-func translateConfig(toml tomlConfig) (Config, error) {
-	var config Config
-	for _, p := range toml.Projects {
-		node, err := buildTree(p)
-		if err != nil {
-			fmt.Println("fail to build a directory tree: ", err)
-			return Config{}, err
-		}
-		config.Projects = append(config.Projects, node)
+func (a *App) SaveConfig(cfg Config) error {
+	b, err := toml.Marshal(cfg)
+	if err != nil {
+		panic(err)
 	}
-	return config, nil
+	configPath, err := configPath()
+	if err != nil {
+		return err
+	}
+	a.SaveFile(configPath, string(b))
+	fmt.Println(string(b))
+	return nil
+}
+
+func (a *App) GetProject(cfg Config) (FileNode, error) {
+	if cfg.ProjectPath == "" {
+		return FileNode{}, fmt.Errorf("project path is empty")
+	}
+	node, err := buildTree(cfg.ProjectPath)
+	if err != nil {
+		fmt.Println("fail to build a directory tree: ", err)
+		return FileNode{}, err
+	}
+	return node, nil
 }
 
 func buildTree(dir string) (FileNode, error) {
@@ -139,16 +153,12 @@ func (a *App) OpenDirectory() (FileNode, error) {
 	return filenode, nil
 }
 
-func splitPath(path string) []string {
-	return strings.Split(path, string(os.PathSeparator))
-}
-
 func (a *App) RelativePath(base string, target string) string {
 	return filepath.Dir(base) + "/" + target
 }
 
 func buildFile(name string) File {
-	return File{filepath.Base(name), name, splitPath(name)}
+	return File{filepath.Base(name), name}
 }
 
 func (a *App) SelectFile() (File, error) {
