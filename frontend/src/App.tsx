@@ -10,7 +10,7 @@ import "./App.css";
 import { fileStatusAtom, FileStatus } from "./FileAtom";
 import { useRecoilState } from "recoil";
 
-const { Content, Footer } = Layout;
+const { Sider, Content, Footer } = Layout;
 
 export function App() {
   const [fileStatus, setFileStatus] = useRecoilState(fileStatusAtom);
@@ -42,9 +42,20 @@ export function App() {
   //   }, [projects]);
 
   return (
-    <Layout style={{ minHeight: "100vh" }}>
-      <Sidebar />
-      <Layout style={{ marginLeft: "0px" }}>
+    <Layout hasSider style={{ minHeight: "100vh" }}>
+      <Sider
+        style={{
+          overflow: "auto",
+          position: "fixed",
+          left: "0",
+          bottom: "0",
+          top: "0",
+        }}
+        theme="light"
+      >
+        <Sidebar />
+      </Sider>
+      <Layout style={{ marginLeft: 200 }}>
         <Content>
           <Editor />
         </Content>

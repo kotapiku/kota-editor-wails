@@ -8,6 +8,7 @@ import {
   Button,
   Layout,
   Dropdown,
+  message,
 } from "antd";
 import {
   FileOutlined,
@@ -63,15 +64,21 @@ export const Sidebar: React.FC = () => {
   const [renameOrNewFile, setRenameOrNewFile] = useState<
     RenameOrNewFile | undefined
   >(undefined);
+  const [messageApi, contextHolder] = message.useMessage();
 
   const openProject = async () => {
-    let dir = await OpenDirectory();
-    console.log("open project: ", dir.current_file);
-    setConfig(
-      main.Config.createFrom({
-        project_path: dir.current_file.absolute_path,
+    await OpenDirectory()
+      .then((dir) => {
+        console.log("open project: ", dir.current_file);
+        setConfig(
+          main.Config.createFrom({
+            project_path: dir.current_file.absolute_path,
+          })
+        );
       })
-    );
+      .catch((err) => {
+        messageApi.error(err);
+      });
   };
   const onExpand: DirectoryTreeProps["onExpand"] = (keys, info) => {
     console.log("Trigger Expand", keys, info);
@@ -129,29 +136,36 @@ export const Sidebar: React.FC = () => {
           onPressEnter={async (e: any) => {
             // ignore enter for ime
             if (e.nativeEvent.keyCode != 229) {
-              let renamedAPath = await RenameFile(node.key, e.target.value);
-              let update = (el: DataNode) => {
-                return {
-                  ...el,
-                  key: renamedAPath,
-                  title: e.target.value,
-                };
-              };
-              if (config.project_path == node.key) {
-                console.log("change config by rename", renamedAPath);
-                setConfig(
-                  main.Config.createFrom({
-                    project_path: renamedAPath,
-                  })
-                );
-                setRenameOrNewFile(undefined);
-              } else {
-                if (dataNode != undefined) {
-                  console.log("change datanode by rename", renamedAPath);
-                  setDataNode(updateNodeRecursive(dataNode, node.key, update));
-                  setRenameOrNewFile(undefined);
-                }
-              }
+              await RenameFile(node.key, e.target.value)
+                .then((renamedAPath) => {
+                  let update = (el: DataNode) => {
+                    return {
+                      ...el,
+                      key: renamedAPath,
+                      title: e.target.value,
+                    };
+                  };
+                  if (config.project_path == node.key) {
+                    console.log("change config by rename", renamedAPath);
+                    setConfig(
+                      main.Config.createFrom({
+                        project_path: renamedAPath,
+                      })
+                    );
+                    setRenameOrNewFile(undefined);
+                  } else {
+                    if (dataNode != undefined) {
+                      console.log("change datanode by rename", renamedAPath);
+                      setDataNode(
+                        updateNodeRecursive(dataNode, node.key, update)
+                      );
+                      setRenameOrNewFile(undefined);
+                    }
+                  }
+                })
+                .catch((err) => {
+                  messageApi.error(err);
+                });
             }
           }}
         />
@@ -169,21 +183,28 @@ export const Sidebar: React.FC = () => {
           }}
           autoFocus
           onPressEnter={async (e: any) => {
-            let savedAPath = await NewFileDir(
-              node.key + e.target.value,
-              renameOrNewFile.isDir
-            );
-            let update = (el: DataNode) => {
-              return {
-                ...el,
-                key: node.key + e.target.value,
-                title: e.target.value,
-              };
-            };
-            if (dataNode != undefined) {
-              console.log("new", savedAPath);
-              setDataNode(updateNodeRecursive(dataNode, node.key, update));
-              setRenameOrNewFile(undefined);
+            // ignore enter for ime
+            if (e.nativeEvent.keyCode != 229) {
+              await NewFileDir(node.key + e.target.value, renameOrNewFile.isDir)
+                .then(() => {
+                  console.log("new file/dir");
+                  let update = (el: DataNode) => {
+                    return {
+                      ...el,
+                      key: node.key + e.target.value,
+                      title: e.target.value,
+                    };
+                  };
+                  if (dataNode != undefined) {
+                    setDataNode(
+                      updateNodeRecursive(dataNode, node.key, update)
+                    );
+                    setRenameOrNewFile(undefined);
+                  }
+                })
+                .catch((err) => {
+                  messageApi.error(err);
+                });
             }
           }}
         />
@@ -197,20 +218,24 @@ export const Sidebar: React.FC = () => {
     setRenameOrNewFile({ kind: "rename", filepath: filepath });
   };
   const deleteFile = async (filepath: string) => {
-    await DeleteFile(filepath);
-
-    if (config.project_path == filepath) {
-      console.log("change config by delete");
-      setConfig(main.Config.createFrom({}));
-    } else {
-      console.log("change datanode by delete");
-      if (dataNode != undefined) {
-        setDataNode(updateNodeRecursive(dataNode, filepath, undefined));
-      }
-    }
-    if (filepath == filePath) {
-      setFilePath(undefined);
-    }
+    await DeleteFile(filepath)
+      .then(() => {
+        if (config.project_path == filepath) {
+          console.log("change config by delete");
+          setConfig(main.Config.createFrom({}));
+        } else {
+          console.log("change datanode by delete");
+          if (dataNode != undefined) {
+            setDataNode(updateNodeRecursive(dataNode, filepath, undefined));
+          }
+        }
+        if (filepath == filePath) {
+          setFilePath(undefined);
+        }
+      })
+      .catch((err) => {
+        messageApi.error(err);
+      });
   };
   const newFile = async (dirpath: string, isDir: boolean) => {
     if (dataNode != undefined) {
@@ -284,85 +309,88 @@ export const Sidebar: React.FC = () => {
   }, [filePath]);
 
   return (
-    <Sider theme="light">
-      <div className="sidebar">
-        <div className="projects">
-          <Row
-            style={{
-              "justifyContent": "space-between",
-              "alignItems": "center",
-              "marginTop": "5px",
+    <>
+      {contextHolder}
+      <Sider theme="light">
+        <div className="sidebar">
+          <div className="projects">
+            <Row
+              style={{
+                "justifyContent": "space-between",
+                "alignItems": "center",
+                "marginTop": "5px",
+              }}
+            >
+              <Text strong type="secondary">
+                Project
+              </Text>
+              <Text type="secondary">
+                <Button
+                  icon={<FolderOpenOutlined />}
+                  type="secondary"
+                  onClick={openProject}
+                  size="small"
+                />
+              </Text>
+            </Row>
+          </div>
+          <Divider style={{ "marginBottom": "0px", "marginTop": "0px" }} />
+          <DirectoryTree
+            showLine
+            switcherIcon={<DownOutlined />}
+            onSelect={onClickFile}
+            onExpand={onExpand}
+            selectedKeys={filePath == undefined ? [] : [filePath]}
+            treeData={dataNode == undefined ? [] : [dataNode]}
+            titleRender={(node: {
+              title: string;
+              key: string;
+              children: undefined | DataNode[];
+            }) => {
+              return (
+                <Dropdown
+                  menu={{
+                    items:
+                      node.children == undefined
+                        ? generateFileMenu(node.key)
+                        : generateDirMenu(node.key),
+                    onClick: (e: { key: string; domEvent: MouseEvent }) => {
+                      e.domEvent.stopPropagation();
+                      console.log(e.key, node.key);
+                      if (e.key === "rename") {
+                        rename(node.key);
+                      } else if (e.key === "delete") {
+                        deleteFile(node.key);
+                      } else if (e.key === "new file") {
+                        newFile(node.key, false);
+                      } else if (e.key === "new directory") {
+                        newFile(node.key, true);
+                      }
+                    },
+                  }}
+                  trigger={["contextMenu"]}
+                >
+                  {(renameOrNewFile?.kind === "rename" &&
+                    renameOrNewFile?.filepath == node.key) ||
+                  (renameOrNewFile?.kind === "new" &&
+                    renameOrNewFile?.filepath + "/" == node.key) ? (
+                    inputRenameOrNew(node)
+                  ) : (
+                    <Text
+                      style={{
+                        color: filePath === node.key ? "white" : "inherit",
+                      }}
+                    >
+                      {node.title}
+                    </Text>
+                  )}
+                </Dropdown>
+              );
             }}
-          >
-            <Text strong type="secondary">
-              Project
-            </Text>
-            <Text type="secondary">
-              <Button
-                icon={<FolderOpenOutlined />}
-                type="secondary"
-                onClick={openProject}
-                size="small"
-              />
-            </Text>
-          </Row>
+            defaultExpandAll
+          />
         </div>
-        <Divider style={{ "marginBottom": "0px", "marginTop": "0px" }} />
-        <DirectoryTree
-          showLine
-          switcherIcon={<DownOutlined />}
-          onSelect={onClickFile}
-          onExpand={onExpand}
-          selectedKeys={filePath == undefined ? [] : [filePath]}
-          treeData={dataNode == undefined ? [] : [dataNode]}
-          titleRender={(node: {
-            title: string;
-            key: string;
-            children: undefined | DataNode[];
-          }) => {
-            return (
-              <Dropdown
-                menu={{
-                  items:
-                    node.children == undefined
-                      ? generateFileMenu(node.key)
-                      : generateDirMenu(node.key),
-                  onClick: (e: { key: string; domEvent: MouseEvent }) => {
-                    e.domEvent.stopPropagation();
-                    console.log(e.key, node.key);
-                    if (e.key === "rename") {
-                      rename(node.key);
-                    } else if (e.key === "delete") {
-                      deleteFile(node.key);
-                    } else if (e.key === "new file") {
-                      newFile(node.key, false);
-                    } else if (e.key === "new directory") {
-                      newFile(node.key, true);
-                    }
-                  },
-                }}
-                trigger={["contextMenu"]}
-              >
-                {(renameOrNewFile?.kind === "rename" &&
-                  renameOrNewFile?.filepath == node.key) ||
-                (renameOrNewFile?.kind === "new" &&
-                  renameOrNewFile?.filepath + "/" == node.key) ? (
-                  inputRenameOrNew(node)
-                ) : (
-                  <Text
-                    style={{
-                      color: filePath === node.key ? "white" : "inherit",
-                    }}
-                  >
-                    {node.title}
-                  </Text>
-                )}
-              </Dropdown>
-            );
-          }}
-          defaultExpandAll
-        />
-      </div>
-    </Sider>
+      </Sider>
+    </>
   );
 };

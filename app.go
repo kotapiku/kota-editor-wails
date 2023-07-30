@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
@@ -193,6 +194,10 @@ func (a *App) NewFileDir(filepath string, isDir bool) error {
 			return err
 		}
 		return nil
+	}
+	_, err := os.Stat(filepath)
+	if err == nil {
+		return errors.New("the file already exists")
 	}
 	fp, err := os.Create(filepath)
 	if err != nil {

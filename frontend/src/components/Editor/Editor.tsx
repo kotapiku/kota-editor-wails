@@ -8,18 +8,25 @@ import { defaultKeymap } from "@codemirror/commands";
 import { useRecoilState } from "recoil";
 import { fileAtom, fileStatusAtom } from "../../FileAtom";
 import { linkify } from "./Linkify";
+import { message } from "antd";
 
 export const Editor: React.FC = () => {
   const [filePath, setFilePath] = useRecoilState(fileAtom);
   const [fileStatus, setFileStatus] = useRecoilState(fileStatusAtom);
   const [content, setContent] = useState<string>("");
+  const [messageApi, contextHolder] = message.useMessage();
 
   const getContent = async () => {
     if (filePath == undefined) {
       return;
     }
-    let content: string = await ReadFile(filePath);
-    setContent(content);
+    await ReadFile(filePath)
+      .then((content) => {
+        setContent(content);
+      })
+      .catch((err) => {
+        messageApi.error(err);
+      });
   };
 
   const onChange = (value: string) => {
@@ -57,20 +64,23 @@ export const Editor: React.FC = () => {
   return filePath == undefined ? (
     <div></div>
   ) : (
-    <CodeMirror
-      value={content}
-      keymap=""
-      extensions={[
-        markdown({ base: markdownLanguage, codeLanguages: languages }),
-        keymap.of(myKeymap),
-        linkify(filePath, setFilePath),
-      ]}
-      onChange={onChange}
-      onBlur={onBlur}
-      height="100%"
-      basicSetup={{
-        lineNumbers: false,
-      }}
-    />
+    <>
+      {contextHolder}
+      <CodeMirror
+        value={content}
+        keymap=""
+        extensions={[
+          markdown({ base: markdownLanguage, codeLanguages: languages }),
+          keymap.of(myKeymap),
+          linkify(filePath, setFilePath),
+        ]}
+        onChange={onChange}
+        onBlur={onBlur}
+        height="100%"
+        basicSetup={{
+          lineNumbers: false,
+        }}
+      />
+    </>
   );
 };
