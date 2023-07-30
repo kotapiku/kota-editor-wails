@@ -40,8 +40,9 @@ type FileNode struct {
 }
 
 type Config struct {
-	ProjectPath string `json:"project_path"`
-	DailyDir    string `json:"daily_dir"`
+	ProjectPath   string `json:"project_path"`
+	DailyDir      string `json:"daily_dir"`
+	DailyTemplate string `json:"daily_template"`
 }
 
 func configPath() (string, error) {
@@ -52,13 +53,24 @@ func configPath() (string, error) {
 	return home + "/.kota_editor/config.toml", nil
 }
 
-func (*App) GetConfig() (Config, error) {
+func (a *App) GetConfig() (Config, error) {
 	// get config from ~/.kota_editor/config.toml
 	var cfg Config
 	configPath, err := configPath()
 	if err != nil {
 		return Config{}, err
 	}
+
+	if !(a.CheckIfExists(configPath)) {
+		if err := a.NewFileDir(filepath.Dir(configPath), true); err != nil {
+			return Config{}, err
+		}
+		if err := a.NewFileDir(configPath, false); err != nil {
+			return Config{}, err
+		}
+		fmt.Println("config file is created")
+	}
+
 	doc, err := os.ReadFile(configPath)
 	if err != nil {
 		fmt.Println("fail to read file")

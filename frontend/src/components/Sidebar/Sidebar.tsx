@@ -22,6 +22,7 @@ import type { DataNode, DirectoryTreeProps } from "antd/es/tree";
 import {
   OpenDirectory,
   RenameFile,
+  SaveFile,
   NewFileDir,
   DeleteFile,
   GetProject,
@@ -66,7 +67,6 @@ export const Sidebar: React.FC = () => {
         setConfig(
           main.Config.createFrom({
             project_path: dir.current_file.absolute_path,
-            daily_dir: "",
           })
         );
       })
@@ -93,14 +93,25 @@ export const Sidebar: React.FC = () => {
       await NewFileDir(todaysNote, false)
         .then(() => {
           if (dataNode != undefined) {
+            console.log("success to new daily note");
             setDataNode(newFileRecursive(dataNode, dirPath, fileName, false));
-            console.log("open today's note: ", todaysNote);
-            setFilePath(todaysNote);
           }
         })
         .catch((err) => {
           messageApi.error(err);
+          return;
         });
+      await SaveFile(todaysNote, config.daily_template)
+        .then(() => {
+          console.log("success to write daily template");
+          console.log(config.daily_template);
+        })
+        .catch((err) => {
+          messageApi.error(err);
+          return;
+        });
+      console.log("open today's note: ", todaysNote);
+      setFilePath(todaysNote);
     }
   };
 
@@ -138,7 +149,6 @@ export const Sidebar: React.FC = () => {
                     setConfig(
                       main.Config.createFrom({
                         project_path: renamedAPath,
-                        daily_dir: "",
                       })
                     );
                     setRenameOrNewFile(undefined);
@@ -236,7 +246,7 @@ export const Sidebar: React.FC = () => {
     console.log("set daily dir: ", path.relative(config.project_path, dirpath));
     setConfig(
       main.Config.createFrom({
-        project_path: config.project_path,
+        ...config,
         daily_dir: path.relative(config.project_path, dirpath),
       })
     );

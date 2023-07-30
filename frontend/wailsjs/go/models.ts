@@ -3,6 +3,7 @@ export namespace main {
 	export class Config {
 	    project_path: string;
 	    daily_dir: string;
+	    daily_template: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Config(source);
@@ -12,6 +13,7 @@ export namespace main {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.project_path = source["project_path"];
 	        this.daily_dir = source["daily_dir"];
+	        this.daily_template = source["daily_template"];
 	    }
 	}
 	export class File {
