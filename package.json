@@ -4,6 +4,7 @@
     "@codemirror/lang-markdown": "^6.2.0",
     "@codemirror/language-data": "^6.3.1",
     "@codemirror/state": "^6.2.1",
+    "@types/path-browserify": "^1.0.0",
     "@uiw/react-codemirror": "^4.21.7",
     "antd": "^5.6.4",
     "browserify": "^17.0.0",
@@ -16,7 +17,7 @@
     "recoil": "^0.7.7"
   },
   "devDependencies": {
-    "@types/node": "^20.4.1",
+    "@types/node": "^20.4.5",
     "@types/path-parse": "^1.0.19"
   }
 }

@@ -15,7 +15,9 @@ import {
   FolderOutlined,
   FolderOpenOutlined,
   DownOutlined,
+  CalendarOutlined,
 } from "@ant-design/icons";
+import * as path from "path-browserify";
 import { fileAtom, fileStatusAtom, configAtom } from "../../FileAtom";
 import { useRecoilState } from "recoil";
 import type { DataNode, DirectoryTreeProps } from "antd/es/tree";
@@ -26,6 +28,7 @@ import {
   NewFileDir,
   DeleteFile,
   GetProject,
+  CheckIfExists,
 } from "../../../wailsjs/go/main/App";
 import { main } from "../../../wailsjs/go/models";
 
@@ -80,6 +83,35 @@ export const Sidebar: React.FC = () => {
         messageApi.error(err);
       });
   };
+  const openTodaysNote = async () => {
+    const today = new Date();
+    const dirPath = path.join(config.project_path, config.daily_dir);
+    const fileName =
+      [
+        today.getFullYear(),
+        String(today.getMonth() + 1).padStart(2, "0"),
+        today.getDate(),
+      ].join("-") + ".md";
+    const todaysNote = path.join(dirPath, fileName);
+    let exists = await CheckIfExists(todaysNote);
+    if (exists) {
+      console.log("open today's note: ", todaysNote);
+      setFilePath(todaysNote);
+    } else {
+      console.log("create today's note: ", todaysNote);
+      await NewFileDir(todaysNote, false)
+        .then(() => {
+          if (dataNode != undefined) {
+            setDataNode(newFileRecursive(dataNode, dirPath, fileName, false));
+            console.log("open today's note: ", todaysNote);
+            setFilePath(todaysNote);
+          }
+        })
+        .catch((err) => {
+          messageApi.error(err);
+        });
+    }
+  };
   const onExpand: DirectoryTreeProps["onExpand"] = (keys, info) => {
     console.log("Trigger Expand", keys, info);
   };
@@ -91,38 +123,8 @@ export const Sidebar: React.FC = () => {
     }
   };
 
-  const generateFileMenu = (filepath: string): MenuProps["items"] => {
-    return [
-      {
-        key: "rename",
-        label: "rename",
-      },
-      {
-        key: "delete",
-        label: "delete",
-      },
-    ];
-  };
-  const generateDirMenu = (filepath: string): MenuProps["items"] => {
-    return [
-      {
-        key: "new file",
-        label: "new file",
-      },
-      {
-        key: "new directory",
-        label: "new directory",
-      },
-      {
-        key: "rename",
-        label: "rename",
-      },
-      {
-        key: "delete",
-        label: "delete",
-      },
-    ];
-  };
+  const fileMenus = ["rename", "delete"];
+  const dirMenus = ["new file", "new directory", "rename", "delete"];
 
   const inputRenameOrNew = (node: { title: string; key: string }) => {
     if (renameOrNewFile?.kind === "rename") {
@@ -239,7 +241,7 @@ export const Sidebar: React.FC = () => {
   };
   const newFile = async (dirpath: string, isDir: boolean) => {
     if (dataNode != undefined) {
-      setDataNode(newFileRecursive(dataNode, dirpath, isDir));
+      setDataNode(newFileRecursive(dataNode, dirpath, "", isDir));
       setRenameOrNewFile({ kind: "new", filepath: dirpath, isDir: isDir });
     }
   };
@@ -267,11 +269,15 @@ export const Sidebar: React.FC = () => {
   function newFileRecursive(
     node: DataNode,
     keyToDir: string,
+    fileName: string,
     isDir: boolean
   ): DataNode {
     if (node.key == keyToDir && node.children) {
       let newFile = new main.FileNode({
-        current_file: { basename: "", absolute_path: keyToDir + "/" },
+        current_file: {
+          basename: fileName,
+          absolute_path: path.join(keyToDir, fileName),
+        },
         is_dir: isDir,
         children: isDir ? [] : undefined,
       });
@@ -280,27 +286,23 @@ export const Sidebar: React.FC = () => {
     }
     if (node.children) {
       node.children = node.children.map((child) =>
-        newFileRecursive(child, keyToDir, isDir)
+        newFileRecursive(child, keyToDir, fileName, isDir)
       );
     }
     return node;
   }
 
   useEffect(() => {
+    console.log(config);
     if (config.project_path != "") {
-      GetProject(config).then((project) => {
-        console.log("get project", project);
-        setDataNode(fromFileToDataNode(project));
-      });
-    }
-  }, []);
-
-  useEffect(() => {
-    if (config.project_path != "") {
-      GetProject(config).then((project) => {
-        console.log("get project", project);
-        setDataNode(fromFileToDataNode(project));
-      });
+      GetProject(config)
+        .then((project) => {
+          console.log("get project", project);
+          setDataNode(fromFileToDataNode(project));
+        })
+        .catch((err) => {
+          messageApi.error(err);
+        });
     }
   }, [config]);
 
@@ -326,6 +328,12 @@ export const Sidebar: React.FC = () => {
               </Text>
               <Text type="secondary">
                 <Button
+                  icon={<CalendarOutlined />}
+                  type="secondary"
+                  onClick={openTodaysNote}
+                  size="small"
+                />
+                <Button
                   icon={<FolderOpenOutlined />}
                   type="secondary"
                   onClick={openProject}
@@ -350,10 +358,12 @@ export const Sidebar: React.FC = () => {
               return (
                 <Dropdown
                   menu={{
-                    items:
-                      node.children == undefined
-                        ? generateFileMenu(node.key)
-                        : generateDirMenu(node.key),
+                    items: (node.children == undefined
+                      ? fileMenus
+                      : dirMenus
+                    ).map((menu) => {
+                      return { key: menu, label: menu };
+                    }),
                     onClick: (e: { key: string; domEvent: MouseEvent }) => {
                       e.domEvent.stopPropagation();
                       console.log(e.key, node.key);

@@ -41,6 +41,7 @@ type FileNode struct {
 
 type Config struct {
 	ProjectPath string `json:"project_path"`
+	DailyDir    string `json:"daily_dir"`
 }
 
 func configPath() (string, error) {
@@ -187,6 +188,10 @@ func (a *App) ReadFile(filepath string) (string, error) {
 	return string(content), nil
 }
 
+func (a *App) CheckIfExists(filepath string) bool {
+	_, err := os.Stat(filepath)
+	return err == nil
+}
 func (a *App) NewFileDir(filepath string, isDir bool) error {
 	if isDir {
 		if err := os.Mkdir(filepath, 0777); err != nil {
@@ -195,8 +200,7 @@ func (a *App) NewFileDir(filepath string, isDir bool) error {
 		}
 		return nil
 	}
-	_, err := os.Stat(filepath)
-	if err == nil {
+	if a.CheckIfExists(filepath) {
 		return errors.New("the file already exists")
 	}
 	fp, err := os.Create(filepath)
