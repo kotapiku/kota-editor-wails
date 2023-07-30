@@ -25,9 +25,6 @@ export const configAtom = atom<main.Config>({
         if (newValue?.daily_dir == undefined) {
           newValue.daily_dir = "";
         }
-        if (newValue?.daily_template == undefined) {
-          newValue.daily_template = "";
-        }
         SaveConfig(newValue);
       });
     },

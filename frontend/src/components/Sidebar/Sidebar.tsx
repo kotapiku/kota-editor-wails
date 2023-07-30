@@ -27,6 +27,7 @@ import {
   DeleteFile,
   GetProject,
   CheckIfExists,
+  GetDailyTemplate,
 } from "../../../wailsjs/go/main/App";
 import { main } from "../../../wailsjs/go/models";
 import {
@@ -85,34 +86,36 @@ export const Sidebar: React.FC = () => {
       ].join("-") + ".md";
     const todaysNote = path.join(dirPath, fileName);
     let exists = await CheckIfExists(todaysNote);
+
     if (exists) {
       console.log("open today's note: ", todaysNote);
       setFilePath(todaysNote);
-    } else {
-      console.log("create today's note: ", todaysNote);
-      await NewFileDir(todaysNote, false)
-        .then(() => {
-          if (dataNode != undefined) {
-            console.log("success to new daily note");
-            setDataNode(newFileRecursive(dataNode, dirPath, fileName, false));
-          }
-        })
-        .catch((err) => {
-          messageApi.error(err);
-          return;
-        });
-      await SaveFile(todaysNote, config.daily_template)
-        .then(() => {
-          console.log("success to write daily template");
-          console.log(config.daily_template);
-        })
-        .catch((err) => {
-          messageApi.error(err);
-          return;
-        });
-      console.log("open today's note: ", todaysNote);
-      setFilePath(todaysNote);
+      return;
     }
+
+    console.log("create today's note: ", todaysNote);
+    await NewFileDir(todaysNote, false)
+      .then(async () => {
+        if (dataNode != undefined) {
+          console.log("success to new daily note");
+          setDataNode(newFileRecursive(dataNode, dirPath, fileName, false));
+        }
+        const template = await GetDailyTemplate();
+        SaveFile(todaysNote, template)
+          .then(() => {
+            console.log("success to write daily template");
+            console.log(template);
+          })
+          .catch((err) => {
+            messageApi.error(err);
+            return;
+          });
+        console.log("open today's note: ", todaysNote);
+        setFilePath(todaysNote);
+      })
+      .catch((err) => {
+        messageApi.error(err);
+      });
   };
 
   const onClickFile: DirectoryTreeProps["onSelect"] = (keys, info) => {
@@ -134,38 +137,39 @@ export const Sidebar: React.FC = () => {
           autoFocus
           onPressEnter={async (e: any) => {
             // ignore enter for ime
-            if (e.nativeEvent.keyCode != 229) {
-              await RenameFile(node.key, e.target.value)
-                .then((renamedAPath) => {
-                  let update = (el: DataNode) => {
-                    return {
-                      ...el,
-                      key: renamedAPath,
-                      title: e.target.value,
-                    };
+            if (e.nativeEvent.keyCode === 229) {
+              return;
+            }
+            await RenameFile(node.key, e.target.value)
+              .then((renamedAPath) => {
+                let update = (el: DataNode) => {
+                  return {
+                    ...el,
+                    key: renamedAPath,
+                    title: e.target.value,
                   };
-                  if (config.project_path == node.key) {
-                    console.log("change config by rename", renamedAPath);
-                    setConfig(
-                      main.Config.createFrom({
-                        project_path: renamedAPath,
-                      })
+                };
+                if (config.project_path === node.key) {
+                  console.log("change config by rename", renamedAPath);
+                  setConfig(
+                    main.Config.createFrom({
+                      project_path: renamedAPath,
+                    })
+                  );
+                  setRenameOrNewFile(undefined);
+                } else {
+                  if (dataNode != undefined) {
+                    console.log("change datanode by rename", renamedAPath);
+                    setDataNode(
+                      updateNodeRecursive(dataNode, node.key, update)
                     );
                     setRenameOrNewFile(undefined);
-                  } else {
-                    if (dataNode != undefined) {
-                      console.log("change datanode by rename", renamedAPath);
-                      setDataNode(
-                        updateNodeRecursive(dataNode, node.key, update)
-                      );
-                      setRenameOrNewFile(undefined);
-                    }
                   }
-                })
-                .catch((err) => {
-                  messageApi.error(err);
-                });
-            }
+                }
+              })
+              .catch((err) => {
+                messageApi.error(err);
+              });
           }}
         />
       );
@@ -183,10 +187,9 @@ export const Sidebar: React.FC = () => {
           autoFocus
           onPressEnter={async (e: any) => {
             // ignore enter for ime
-            if (e.nativeEvent.keyCode != 229) {
+            if (e.nativeEvent.keyCode !== 229) {
               await NewFileDir(node.key + e.target.value, renameOrNewFile.isDir)
                 .then(() => {
-                  console.log("new file/dir");
                   let update = (el: DataNode) => {
                     return {
                       ...el,
@@ -200,6 +203,7 @@ export const Sidebar: React.FC = () => {
                     );
                     setRenameOrNewFile(undefined);
                   }
+                  console.log("new file/dir", dataNode);
                 })
                 .catch((err) => {
                   messageApi.error(err);
@@ -216,7 +220,7 @@ export const Sidebar: React.FC = () => {
   const rename = (filepath: string) => {
     setRenameOrNewFile({ kind: "rename", filepath: filepath });
   };
-  const deleteFile = async (filepath: string) => {
+  async function deleteFile(filepath: string) {
     await DeleteFile(filepath)
       .then(() => {
         if (config.project_path == filepath) {
@@ -224,18 +228,19 @@ export const Sidebar: React.FC = () => {
           setConfig(main.Config.createFrom({}));
         } else {
           if (dataNode != undefined) {
-            console.log("change datanode by delete");
-            setDataNode(updateNodeRecursive(dataNode, filepath, undefined));
+            const updated = updateNodeRecursive(dataNode, filepath, undefined);
+            setDataNode({ ...updated });
           }
         }
         if (filepath == filePath) {
           setFilePath(undefined);
         }
+        console.log("deleted", dataNode);
       })
       .catch((err) => {
         messageApi.error(err);
       });
-  };
+  }
   const newFile = (dirpath: string, isDir: boolean) => {
     if (dataNode != undefined) {
       setDataNode(newFileRecursive(dataNode, dirpath, "", isDir));
@@ -263,7 +268,7 @@ export const Sidebar: React.FC = () => {
   ]);
 
   useEffect(() => {
-    console.log(config);
+    console.log("changed", config);
     if (config.project_path != "") {
       GetProject(config)
         .then((project) => {

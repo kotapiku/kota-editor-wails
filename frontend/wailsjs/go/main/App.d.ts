@@ -8,6 +8,8 @@ export function DeleteFile(arg1:string):Promise<void>;
 
 export function GetConfig():Promise<main.Config>;
 
+export function GetDailyTemplate():Promise<string>;
+
 export function GetProject(arg1:main.Config):Promise<main.FileNode>;
 
 export function NewFileDir(arg1:string,arg2:boolean):Promise<void>;

@@ -40,17 +40,30 @@ type FileNode struct {
 }
 
 type Config struct {
-	ProjectPath   string `json:"project_path"`
-	DailyDir      string `json:"daily_dir"`
-	DailyTemplate string `json:"daily_template"`
+	ProjectPath string `json:"project_path"`
+	DailyDir    string `json:"daily_dir"`
 }
 
-func configPath() (string, error) {
+func configDir() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
-	return home + "/.kota_editor/config.toml", nil
+	return home + "/.kota_editor", nil
+}
+func configPath() (string, error) {
+	configDir, err := configDir()
+	if err != nil {
+		return "", err
+	}
+	return configDir + "/config.toml", nil
+}
+func dailyTempPath() (string, error) {
+	configDir, err := configDir()
+	if err != nil {
+		return "", err
+	}
+	return configDir + "/daily_template.md", nil
 }
 
 func (a *App) GetConfig() (Config, error) {
@@ -109,6 +122,14 @@ func (a *App) GetProject(cfg Config) (FileNode, error) {
 		return FileNode{}, err
 	}
 	return node, nil
+}
+
+func (a *App) GetDailyTemplate() (string, error) {
+	dailyTempPath, err := dailyTempPath()
+	if err != nil {
+		return "", err
+	}
+	return a.ReadFile(dailyTempPath)
 }
 
 func buildTree(dir string) (FileNode, error) {
@@ -196,7 +217,6 @@ func (a *App) ReadFile(filepath string) (string, error) {
 		fmt.Println("fail to read file: ", err)
 		return "", err
 	}
-	fmt.Printf("read %d bytes\n", len(content))
 	return string(content), nil
 }
 
