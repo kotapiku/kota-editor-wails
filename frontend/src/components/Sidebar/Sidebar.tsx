@@ -11,8 +11,6 @@ import {
   message,
 } from "antd";
 import {
-  FileOutlined,
-  FolderOutlined,
   FolderOpenOutlined,
   DownOutlined,
   CalendarOutlined,
@@ -21,7 +19,6 @@ import * as path from "path-browserify";
 import { fileAtom, fileStatusAtom, configAtom } from "../../FileAtom";
 import { useRecoilState } from "recoil";
 import type { DataNode, DirectoryTreeProps } from "antd/es/tree";
-import type { MenuProps } from "antd";
 import {
   OpenDirectory,
   RenameFile,
@@ -31,22 +28,15 @@ import {
   CheckIfExists,
 } from "../../../wailsjs/go/main/App";
 import { main } from "../../../wailsjs/go/models";
+import {
+  fromFileToDataNode,
+  updateNodeRecursive,
+  newFileRecursive,
+} from "./DataNode";
 
 const { Sider } = Layout;
 const { Text } = Typography;
 const { DirectoryTree } = Tree;
-
-// TODO: if not md then disabled: true
-function fromFileToDataNode(node: main.FileNode): DataNode {
-  return {
-    key: node.current_file.absolute_path,
-    icon: node.is_dir ? <></> : <FileOutlined />,
-    children: node.is_dir // undefined if node is file
-      ? node.children.map((child) => fromFileToDataNode(child))
-      : undefined,
-    title: node.current_file.basename,
-  };
-}
 
 type RenameOrNewFile = RenameFile | NewFile;
 type RenameFile = {
@@ -112,9 +102,6 @@ export const Sidebar: React.FC = () => {
         });
     }
   };
-  const onExpand: DirectoryTreeProps["onExpand"] = (keys, info) => {
-    console.log("Trigger Expand", keys, info);
-  };
 
   const onClickFile: DirectoryTreeProps["onSelect"] = (keys, info) => {
     console.log("selected file: ", info.node);
@@ -123,9 +110,7 @@ export const Sidebar: React.FC = () => {
     }
   };
 
-  const fileMenus = ["rename", "delete"];
-  const dirMenus = ["new file", "new directory", "rename", "delete"];
-
+  // right click menus
   const inputRenameOrNew = (node: { title: string; key: string }) => {
     if (renameOrNewFile?.kind === "rename") {
       return (
@@ -239,58 +224,20 @@ export const Sidebar: React.FC = () => {
         messageApi.error(err);
       });
   };
-  const newFile = async (dirpath: string, isDir: boolean) => {
+  const newFile = (dirpath: string, isDir: boolean) => {
     if (dataNode != undefined) {
       setDataNode(newFileRecursive(dataNode, dirpath, "", isDir));
       setRenameOrNewFile({ kind: "new", filepath: dirpath, isDir: isDir });
     }
   };
-  // delete: update=undefined, update: update=関数。
-  function updateNodeRecursive(
-    node: DataNode,
-    keyToUpdate: string,
-    update: ((param: DataNode) => DataNode) | undefined
-  ): DataNode {
-    if (node.key === keyToUpdate) {
-      return update == undefined ? node : update(node);
-    } else if (node.children) {
-      if (update == undefined) {
-        node.children = node.children.filter((child) => {
-          return child.key != keyToUpdate;
-        });
-      }
-      node.children = node.children.map((child) =>
-        updateNodeRecursive(child, keyToUpdate, update)
-      );
-    }
-    return node;
-  }
-
-  function newFileRecursive(
-    node: DataNode,
-    keyToDir: string,
-    fileName: string,
-    isDir: boolean
-  ): DataNode {
-    if (node.key == keyToDir && node.children) {
-      let newFile = new main.FileNode({
-        current_file: {
-          basename: fileName,
-          absolute_path: path.join(keyToDir, fileName),
-        },
-        is_dir: isDir,
-        children: isDir ? [] : undefined,
-      });
-      node.children.push(fromFileToDataNode(newFile));
-      return node;
-    }
-    if (node.children) {
-      node.children = node.children.map((child) =>
-        newFileRecursive(child, keyToDir, fileName, isDir)
-      );
-    }
-    return node;
-  }
+  const fileMenus = [
+    { key: "rename", fun: rename },
+    { key: "delete", fun: deleteFile },
+  ];
+  const dirMenus = fileMenus.concat([
+    { key: "new file", fun: (k: string) => newFile(k, false) },
+    { key: "new directory", fun: (k: string) => newFile(k, true) },
+  ]);
 
   useEffect(() => {
     console.log(config);
@@ -347,7 +294,6 @@ export const Sidebar: React.FC = () => {
             showLine
             switcherIcon={<DownOutlined />}
             onSelect={onClickFile}
-            onExpand={onExpand}
             selectedKeys={filePath == undefined ? [] : [filePath]}
             treeData={dataNode == undefined ? [] : [dataNode]}
             titleRender={(node: {
@@ -362,20 +308,18 @@ export const Sidebar: React.FC = () => {
                       ? fileMenus
                       : dirMenus
                     ).map((menu) => {
-                      return { key: menu, label: menu };
+                      return { key: menu.key, label: menu.key };
                     }),
                     onClick: (e: { key: string; domEvent: MouseEvent }) => {
                       e.domEvent.stopPropagation();
                       console.log(e.key, node.key);
-                      if (e.key === "rename") {
-                        rename(node.key);
-                      } else if (e.key === "delete") {
-                        deleteFile(node.key);
-                      } else if (e.key === "new file") {
-                        newFile(node.key, false);
-                      } else if (e.key === "new directory") {
-                        newFile(node.key, true);
-                      }
+                      node.children == undefined
+                        ? fileMenus
+                            .find((menu) => menu.key === e.key)
+                            ?.fun(node.key)
+                        : dirMenus
+                            .find((menu) => menu.key === e.key)
+                            ?.fun(node.key);
                     },
                   }}
                   trigger={["contextMenu"]}
