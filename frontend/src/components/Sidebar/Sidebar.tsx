@@ -127,27 +127,30 @@ export const Sidebar: React.FC = () => {
           }}
           autoFocus
           onPressEnter={async (e: any) => {
-            let renamedAPath = await RenameFile(node.key, e.target.value);
-            let update = (el: DataNode) => {
-              return {
-                ...el,
-                key: renamedAPath,
-                title: e.target.value,
+            // ignore enter for ime
+            if (e.nativeEvent.keyCode != 229) {
+              let renamedAPath = await RenameFile(node.key, e.target.value);
+              let update = (el: DataNode) => {
+                return {
+                  ...el,
+                  key: renamedAPath,
+                  title: e.target.value,
+                };
               };
-            };
-            if (config.project_path == node.key) {
-              console.log("change config by rename", renamedAPath);
-              setConfig(
-                main.Config.createFrom({
-                  project_path: renamedAPath,
-                })
-              );
-              setRenameOrNewFile(undefined);
-            } else {
-              if (dataNode != undefined) {
-                console.log("change datanode by rename", renamedAPath);
-                setDataNode(updateNodeRecursive(dataNode, node.key, update));
+              if (config.project_path == node.key) {
+                console.log("change config by rename", renamedAPath);
+                setConfig(
+                  main.Config.createFrom({
+                    project_path: renamedAPath,
+                  })
+                );
                 setRenameOrNewFile(undefined);
+              } else {
+                if (dataNode != undefined) {
+                  console.log("change datanode by rename", renamedAPath);
+                  setDataNode(updateNodeRecursive(dataNode, node.key, update));
+                  setRenameOrNewFile(undefined);
+                }
               }
             }
           }}
@@ -346,7 +349,13 @@ export const Sidebar: React.FC = () => {
                   renameOrNewFile?.filepath + "/" == node.key) ? (
                   inputRenameOrNew(node)
                 ) : (
-                  <Text>{node.title}</Text>
+                  <Text
+                    style={{
+                      color: filePath === node.key ? "white" : "inherit",
+                    }}
+                  >
+                    {node.title}
+                  </Text>
                 )}
               </Dropdown>
             );
