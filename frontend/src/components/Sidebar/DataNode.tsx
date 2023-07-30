@@ -1,5 +1,4 @@
 import { FileOutlined } from "@ant-design/icons";
-import * as path from "path-browserify";
 import type { DataNode } from "antd/es/tree";
 import { main } from "../../../wailsjs/go/models";
 
@@ -45,7 +44,8 @@ export function newFileRecursive(
     let newFile = new main.FileNode({
       current_file: {
         basename: fileName,
-        absolute_path: path.join(keyToDir, fileName),
+        // absolute_path = fileName == "" ? keyToDir/ : keyToDir/fileName
+        absolute_path: keyToDir + "/" + fileName,
       },
       is_dir: isDir,
       children: isDir ? [] : undefined,
