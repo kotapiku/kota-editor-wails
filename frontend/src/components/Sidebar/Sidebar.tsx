@@ -66,6 +66,7 @@ export const Sidebar: React.FC = () => {
         setConfig(
           main.Config.createFrom({
             project_path: dir.current_file.absolute_path,
+            daily_dir: "",
           })
         );
       })
@@ -137,6 +138,7 @@ export const Sidebar: React.FC = () => {
                     setConfig(
                       main.Config.createFrom({
                         project_path: renamedAPath,
+                        daily_dir: "",
                       })
                     );
                     setRenameOrNewFile(undefined);
@@ -211,8 +213,8 @@ export const Sidebar: React.FC = () => {
           console.log("change config by delete");
           setConfig(main.Config.createFrom({}));
         } else {
-          console.log("change datanode by delete");
           if (dataNode != undefined) {
+            console.log("change datanode by delete");
             setDataNode(updateNodeRecursive(dataNode, filepath, undefined));
           }
         }
@@ -230,13 +232,24 @@ export const Sidebar: React.FC = () => {
       setRenameOrNewFile({ kind: "new", filepath: dirpath, isDir: isDir });
     }
   };
+  const setDailyDir = (dirpath: string) => {
+    console.log("set daily dir: ", path.relative(config.project_path, dirpath));
+    setConfig(
+      main.Config.createFrom({
+        project_path: config.project_path,
+        daily_dir: path.relative(config.project_path, dirpath),
+      })
+    );
+  };
+
   const fileMenus = [
-    { key: "rename", fun: rename },
-    { key: "delete", fun: deleteFile },
+    { key: "Rename", fun: rename },
+    { key: "Delete", fun: deleteFile },
   ];
   const dirMenus = fileMenus.concat([
-    { key: "new file", fun: (k: string) => newFile(k, false) },
-    { key: "new directory", fun: (k: string) => newFile(k, true) },
+    { key: "New file", fun: (k: string) => newFile(k, false) },
+    { key: "New directory", fun: (k: string) => newFile(k, true) },
+    { key: "Set in daily directory", fun: setDailyDir },
   ]);
 
   useEffect(() => {
