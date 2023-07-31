@@ -1,19 +1,22 @@
+import { useEffect, useState } from "react";
 import { Editor } from "./components/Editor";
 import { Sidebar } from "./components/Sidebar";
-import { Row, Layout } from "antd";
+import { AutoComplete, Modal, Row, Layout } from "antd";
 import {
   CheckCircleOutlined,
   LoadingOutlined,
   WarningOutlined,
 } from "@ant-design/icons";
 import "./App.css";
-import { fileStatusAtom, FileStatus } from "./FileAtom";
+import { fileStatusAtom, FileStatus, configAtom } from "./FileAtom";
 import { useRecoilState } from "recoil";
 
 const { Sider, Content, Footer } = Layout;
 
 export function App() {
   const [fileStatus, setFileStatus] = useRecoilState(fileStatusAtom);
+  const [config, setConfig] = useRecoilState(configAtom);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   function statusIcon(status: FileStatus) {
     switch (status) {
@@ -29,17 +32,17 @@ export function App() {
   // keymap
   //   useEffect(() => {
   //     const hundleKeyDown = (event: KeyboardEvent) => {
-  //       if ((event.metaKey || event.ctrlKey) && event.key === "o") {
+  //       if ((event.metaKey || event.ctrlKey) && event.key === "p") {
   //         event.preventDefault();
   //         console.log("open file");
-  //         openProject();
+  //         setIsModalOpen(true);
   //       }
   //     };
   //     window.addEventListener("keydown", hundleKeyDown);
   //     return () => {
   //       window.removeEventListener("keydown", hundleKeyDown);
   //     };
-  //   }, [projects]);
+  //   }, []);
 
   return (
     <Layout hasSider style={{ minHeight: "100vh" }}>

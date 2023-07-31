@@ -9,3 +9,7 @@
   margin-bottom: 0px;
   padding-bottom: 0px;
 }
+
+.ant-modal-content {
+  padding: 5px !important;
+}

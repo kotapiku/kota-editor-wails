@@ -60,3 +60,16 @@ export function newFileRecursive(
   }
   return node;
 }
+
+export function fileOptions(
+  dn: DataNode | undefined
+): { label: string; value: string }[] {
+  if (dn == undefined) {
+    return [];
+  }
+  let ret = [];
+  if (dn.children == undefined) {
+    ret.push({ label: dn.title, value: dn.key as string });
+  }
+  return ret.concat(dn.children?.flatMap(fileOptions) ?? []);
+}
