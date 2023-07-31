@@ -3,7 +3,7 @@ import { ReadFile, SaveFile } from "../../../wailsjs/go/main/App";
 import CodeMirror from "@uiw/react-codemirror";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
-import { keymap } from "@codemirror/view";
+import { keymap, EditorView } from "@codemirror/view";
 import { defaultKeymap } from "@codemirror/commands";
 import { useRecoilState } from "recoil";
 import { fileAtom, fileStatusAtom } from "../../FileAtom";
@@ -73,12 +73,14 @@ export const Editor: React.FC = () => {
           markdown({ base: markdownLanguage, codeLanguages: languages }),
           keymap.of(myKeymap),
           linkify(filePath, setFilePath),
+          EditorView.lineWrapping,
         ]}
         onChange={onChange}
         onBlur={onBlur}
         height="100%"
         basicSetup={{
           lineNumbers: false,
+          lineWrapping: true,
         }}
       />
     </>
