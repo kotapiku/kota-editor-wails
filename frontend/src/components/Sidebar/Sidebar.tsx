@@ -76,6 +76,7 @@ export const Sidebar: React.FC = () => {
       });
   };
   const openTodaysNote = async () => {
+    console.log(config);
     const today = new Date();
     const dirPath = path.join(config.project_path, config.daily_dir);
     const fileName =
@@ -98,7 +99,8 @@ export const Sidebar: React.FC = () => {
       .then(async () => {
         if (dataNode != undefined) {
           console.log("success to new daily note");
-          setDataNode(newFileRecursive(dataNode, dirPath, fileName, false));
+          const newNode = newFileRecursive(dataNode, dirPath, fileName, false);
+          setDataNode({ ...newNode });
         }
         const template = await GetDailyTemplate();
         SaveFile(todaysNote, template)
@@ -160,9 +162,12 @@ export const Sidebar: React.FC = () => {
                 } else {
                   if (dataNode != undefined) {
                     console.log("change datanode by rename", renamedAPath);
-                    setDataNode(
-                      updateNodeRecursive(dataNode, node.key, update)
+                    const newNode = updateNodeRecursive(
+                      dataNode,
+                      node.key,
+                      update
                     );
+                    setDataNode({ ...newNode });
                     setRenameOrNewFile(undefined);
                   }
                 }
@@ -180,7 +185,12 @@ export const Sidebar: React.FC = () => {
           onBlur={() => {
             if (dataNode != undefined) {
               console.log("cancel to new ", node.key);
-              setDataNode(updateNodeRecursive(dataNode, node.key, undefined));
+              const newNode = updateNodeRecursive(
+                dataNode,
+                node.key,
+                undefined
+              );
+              setDataNode({ ...newNode });
               setRenameOrNewFile(undefined);
             }
           }}
@@ -198,9 +208,12 @@ export const Sidebar: React.FC = () => {
                     };
                   };
                   if (dataNode != undefined) {
-                    setDataNode(
-                      updateNodeRecursive(dataNode, node.key, update)
+                    const newNode = updateNodeRecursive(
+                      dataNode,
+                      node.key,
+                      update
                     );
+                    setDataNode({ ...newNode });
                     setRenameOrNewFile(undefined);
                   }
                   console.log("new file/dir", dataNode);
@@ -228,8 +241,8 @@ export const Sidebar: React.FC = () => {
           setConfig(main.Config.createFrom({}));
         } else {
           if (dataNode != undefined) {
-            const updated = updateNodeRecursive(dataNode, filepath, undefined);
-            setDataNode({ ...updated });
+            const newNode = updateNodeRecursive(dataNode, filepath, undefined);
+            setDataNode({ ...newNode });
           }
         }
         if (filepath == filePath) {
@@ -243,7 +256,8 @@ export const Sidebar: React.FC = () => {
   }
   const newFile = (dirpath: string, isDir: boolean) => {
     if (dataNode != undefined) {
-      setDataNode(newFileRecursive(dataNode, dirpath, "", isDir));
+      const newNode = newFileRecursive(dataNode, dirpath, "", isDir);
+      setDataNode({ ...newNode });
       setRenameOrNewFile({ kind: "new", filepath: dirpath, isDir: isDir });
     }
   };

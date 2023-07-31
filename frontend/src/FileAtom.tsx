@@ -19,13 +19,14 @@ export const configAtom = atom<main.Config>({
   effects: [
     ({ onSet }) => {
       onSet((newValue, _) => {
+        let config = { ...newValue }; // newValue is readonly
         if (newValue?.project_path == undefined) {
-          newValue.project_path = "";
+          config.project_path = "";
         }
         if (newValue?.daily_dir == undefined) {
-          newValue.daily_dir = "";
+          config.daily_dir = "";
         }
-        SaveConfig(newValue);
+        SaveConfig(config);
       });
     },
   ],
