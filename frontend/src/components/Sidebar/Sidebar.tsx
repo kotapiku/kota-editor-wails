@@ -107,8 +107,11 @@ export const Sidebar: React.FC = () => {
       .then(async () => {
         if (dataNode != undefined) {
           console.log("success to new daily note");
+          console.log("ehe");
           const newNode = newFileRecursive(dataNode, dirPath, fileName, false);
+          console.log("aha2");
           setDataNode({ ...newNode });
+          console.log("aha");
         }
         const template = await GetDailyTemplate();
         SaveFile(todaysNote, template)

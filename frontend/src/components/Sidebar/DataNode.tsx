@@ -6,7 +6,7 @@ import { main } from "../../../wailsjs/go/models";
 export function fromFileToDataNode(node: main.FileNode): DataNode {
   return {
     key: node.current_file.absolute_path,
-    icon: node.is_dir ? <></> : <FileOutlined />,
+    icon: node.is_dir ? null : <FileOutlined />,
     children: node.is_dir // undefined if node is file
       ? node.children.map((child) => fromFileToDataNode(child))
       : undefined,
@@ -19,17 +19,36 @@ export function updateNodeRecursive(
   keyToUpdate: string,
   update: ((param: DataNode) => DataNode) | undefined
 ): DataNode {
+  console.log(node, keyToUpdate, update);
   if (node.key === keyToUpdate) {
     return update == undefined ? node : update(node);
   } else if (node.children) {
-    if (update == undefined) {
-      node.children = node.children.filter((child) => {
-        return child.key != keyToUpdate;
-      });
+    let idx = node.children.findIndex((child) => child.key == keyToUpdate);
+    if (idx != -1) {
+      if (update == undefined) {
+        return {
+          ...node,
+          children: node.children
+            .slice(0, idx)
+            .concat(node.children.slice(idx + 1)),
+        };
+      } else {
+        return {
+          ...node,
+          children: node.children
+            .slice(0, idx)
+            .concat([update(node.children[idx])])
+            .concat(node.children.slice(idx + 1)),
+        };
+      }
+    } else {
+      return {
+        ...node,
+        children: node.children.map((child) =>
+          updateNodeRecursive(child, keyToUpdate, update)
+        ),
+      };
     }
-    node.children = node.children.map((child) =>
-      updateNodeRecursive(child, keyToUpdate, update)
-    );
   }
   return node;
 }
@@ -40,23 +59,28 @@ export function newFileRecursive(
   fileName: string,
   isDir: boolean
 ): DataNode {
+  console.log(node, keyToDir, fileName, isDir);
   if (node.key == keyToDir && node.children) {
     let newFile = new main.FileNode({
       current_file: {
         basename: fileName,
-        // absolute_path = fileName == "" ? keyToDir/ : keyToDir/fileName
         absolute_path: keyToDir + "/" + fileName,
       },
       is_dir: isDir,
       children: isDir ? [] : undefined,
     });
-    node.children.push(fromFileToDataNode(newFile));
-    return node;
+    return {
+      ...node,
+      children: [...node.children, fromFileToDataNode(newFile)],
+    };
   }
   if (node.children) {
-    node.children = node.children.map((child) =>
-      newFileRecursive(child, keyToDir, fileName, isDir)
-    );
+    return {
+      ...node,
+      children: node.children.map((child) =>
+        newFileRecursive(child, keyToDir, fileName, isDir)
+      ),
+    };
   }
   return node;
 }
