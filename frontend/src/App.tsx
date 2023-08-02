@@ -10,6 +10,7 @@ import {
 import "./App.css";
 import { fileStatusAtom, FileStatus, configAtom } from "./FileAtom";
 import { useRecoilState } from "recoil";
+import { FSComponent } from "./components/FileSearch";
 
 const { Sider, Content, Footer } = Layout;
 
@@ -84,6 +85,7 @@ export function App() {
           </Row>
         </Footer>
       </Layout>
+      <FSComponent />
     </Layout>
   );
 }

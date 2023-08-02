@@ -1,6 +1,7 @@
 import { atom } from "recoil";
 import { main } from "../wailsjs/go/models";
 import { GetConfig, SaveConfig } from "../wailsjs/go/main/App";
+import type { DataNode } from "antd/es/tree";
 
 export const fileAtom = atom<string | undefined>({
   key: "filePath",
@@ -30,4 +31,9 @@ export const configAtom = atom<main.Config>({
       });
     },
   ],
+});
+
+export const dataNodeAtom = atom<DataNode | undefined>({
+  key: "dataNode",
+  default: undefined,
 });
