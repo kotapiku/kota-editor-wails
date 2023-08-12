@@ -91,7 +91,7 @@ export const Sidebar: React.FC = () => {
       [
         today.getFullYear(),
         String(today.getMonth() + 1).padStart(2, "0"),
-        today.getDate(),
+        String(today.getDate()).padStart(2, "0"),
       ].join("-") + ".md";
     const todaysNote = path.join(dirPath, fileName);
     let exists = await CheckIfExists(todaysNote);
