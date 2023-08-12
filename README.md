@@ -21,24 +21,30 @@ To build a redistributable, production mode package, use `wails build`.
 ---
 
 ## 仕様
-### sidebar
-- projectの右のボタン(左から)
-  - 今日のノートを開く。config.tomlのdailyDirで指定されたフォルダを探索。"YYYY-MM-DD.md"が存在したらそれを開いて、なかったら新規作成して開く。
-  - ディレクトリを一つ選択して開く。projectPathが変更され、dailyDirは""になる。
-- ディレクトリ上で右クリックで、new file/dir, rename, deleteできる
-  - deleteは(今のところ)中が空のときのみできる
-- ファイル上で右クリックで、rename, deleteできる
 
-### editor (codemirror使用）
+### sidebar
+
+- project の右のボタン(左から)
+  - 今日のノートを開く。config.toml の dailyDir で指定されたフォルダを探索。"YYYY-MM-DD.md"が存在したらそれを開いて、なかったら新規作成して開く。
+  - ディレクトリを一つ選択して開く。projectPath が変更され、dailyDir は""になる。
+- ディレクトリ上で右クリックで、new file/dir, rename, delete できる
+  - delete は(今のところ)中が空のときのみできる
+- ファイル上で右クリックで、rename, delete できる
+
+### editor (codemirror 使用）
+
 - 二重大かっこの中に相対パスを書くことでファイルのリンクができる
-- cmd+sで保存。フォーカスを外したり別のファイルにとんでも保存される。
+- cmd+s で保存。フォーカスを外したり別のファイルにとんでも保存される。
 - 保存前は右下のアイコンが注意マークに、保存すると完了マークになる。
+- vim extension が有効になっている。
 
 ### settings
+
 - `~/.kota_editor/config.toml`が設定ファイル。なかったら自動でつくられる。
-- `projectPath = "/path/to/project"`でproject指定できる。
-- `dailyDir = "daily"`でdailyディレクトリのprojectからの相対パス指定。デフォルトは""でprojectを指す
+- `projectPath = "/path/to/project"`で project 指定できる。
+- `dailyDir = "daily"`で daily ディレクトリの project からの相対パス指定。デフォルトは""で project を指す
 
 ### file search
-- cmd+pでファイル名検索して開ける
-- cmd+lでフォーカス
+
+- cmd+p でファイル名検索して開ける
+- cmd+l でフォーカス
