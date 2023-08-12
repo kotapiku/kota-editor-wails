@@ -69,8 +69,8 @@ export const Sidebar: React.FC = () => {
   >(undefined);
   const [messageApi, contextHolder] = message.useMessage();
 
-  const openProject = async () => {
-    await OpenDirectory()
+  const openProject = () => {
+    OpenDirectory()
       .then((dir) => {
         console.log("open project: ", dir.current_file);
         setConfig(
@@ -103,7 +103,7 @@ export const Sidebar: React.FC = () => {
     }
 
     console.log("create today's note: ", todaysNote);
-    await NewFileDir(todaysNote, false)
+    NewFileDir(todaysNote, false)
       .then(async () => {
         if (dataNode != undefined) {
           console.log("success to new daily note");
@@ -148,12 +148,12 @@ export const Sidebar: React.FC = () => {
             setRenameOrNewFile(undefined);
           }}
           autoFocus
-          onPressEnter={async (e: any) => {
+          onPressEnter={(e: any) => {
             // ignore enter for ime
             if (e.nativeEvent.keyCode === 229) {
               return;
             }
-            await RenameFile(node.key, e.target.value)
+            RenameFile(node.key, e.target.value)
               .then((renamedAPath) => {
                 let update = (el: DataNode) => {
                   return {
@@ -206,10 +206,10 @@ export const Sidebar: React.FC = () => {
             }
           }}
           autoFocus
-          onPressEnter={async (e: any) => {
+          onPressEnter={(e: any) => {
             // ignore enter for ime
             if (e.nativeEvent.keyCode !== 229) {
-              await NewFileDir(node.key + e.target.value, renameOrNewFile.isDir)
+              NewFileDir(node.key + e.target.value, renameOrNewFile.isDir)
                 .then(() => {
                   let update = (el: DataNode) => {
                     return {
@@ -244,8 +244,8 @@ export const Sidebar: React.FC = () => {
   const rename = (filepath: string) => {
     setRenameOrNewFile({ kind: "rename", filepath: filepath });
   };
-  async function deleteFile(filepath: string) {
-    await DeleteFile(filepath)
+  function deleteFile(filepath: string) {
+    DeleteFile(filepath)
       .then(() => {
         if (config.project_path == filepath) {
           console.log("change config by delete");

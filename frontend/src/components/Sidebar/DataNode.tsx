@@ -91,9 +91,11 @@ export function fileOptions(
   if (dn == undefined) {
     return [];
   }
-  let ret = [];
+  let ret: { label: string; value: string }[] = [];
   if (dn.children == undefined) {
     ret.push({ label: dn.title, value: dn.key as string });
+  } else {
+    ret = ret.concat(dn.children.flatMap(fileOptions));
   }
-  return ret.concat(dn.children?.flatMap(fileOptions) ?? []);
+  return ret;
 }

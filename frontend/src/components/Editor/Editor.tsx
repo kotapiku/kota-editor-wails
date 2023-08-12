@@ -5,22 +5,23 @@ import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 import { keymap, EditorView } from "@codemirror/view";
 import { defaultKeymap } from "@codemirror/commands";
-import { useRecoilState } from "recoil";
+import { useRecoilState, useSetRecoilState } from "recoil";
 import { fileAtom, fileStatusAtom } from "../../FileAtom";
 import { linkify } from "./Linkify";
-import { message } from "antd";
+import { Skeleton, message } from "antd";
+import { vim } from "@replit/codemirror-vim";
 
 export const Editor: React.FC = () => {
   const [filePath, setFilePath] = useRecoilState(fileAtom);
-  const [fileStatus, setFileStatus] = useRecoilState(fileStatusAtom);
+  const setFileStatus = useSetRecoilState(fileStatusAtom);
   const [content, setContent] = useState<string>("");
   const [messageApi, contextHolder] = message.useMessage();
 
-  const getContent = async () => {
+  const getContent = () => {
     if (filePath == undefined) {
       return;
     }
-    await ReadFile(filePath)
+    ReadFile(filePath)
       .then((content) => {
         setContent(content);
       })
@@ -39,11 +40,14 @@ export const Editor: React.FC = () => {
       return;
     }
     setFileStatus("Saving");
-    SaveFile(filePath, content);
-    setFileStatus("Saved");
-  };
-  const onBlur = () => {
-    save();
+    SaveFile(filePath, content)
+      .then(() => {
+        setFileStatus("Saved");
+      })
+      .catch((err) => {
+        messageApi.error(err);
+        setFileStatus("Unsaved");
+      });
   };
 
   const myKeymap = [
@@ -62,21 +66,21 @@ export const Editor: React.FC = () => {
   }, [filePath]);
 
   return filePath == undefined ? (
-    <div></div>
+    <Skeleton />
   ) : (
     <>
       {contextHolder}
       <CodeMirror
         value={content}
-        keymap=""
         extensions={[
           markdown({ base: markdownLanguage, codeLanguages: languages }),
           keymap.of(myKeymap),
           linkify(filePath, setFilePath),
           EditorView.lineWrapping,
+          vim(),
         ]}
         onChange={onChange}
-        onBlur={onBlur}
+        onBlur={() => save()}
         height="100%"
         basicSetup={{
           lineNumbers: false,

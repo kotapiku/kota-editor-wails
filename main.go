@@ -17,7 +17,7 @@ func main() {
 
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:  "kota-editor-go",
+		Title:  "kota-editor-wails",
 		Width:  1024,
 		Height: 768,
 		AssetServer: &assetserver.Options{

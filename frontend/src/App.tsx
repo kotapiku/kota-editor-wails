@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
 import { Editor } from "./components/Editor";
 import { Sidebar } from "./components/Sidebar";
-import { AutoComplete, Modal, Row, Layout } from "antd";
+import { Row, Layout } from "antd";
 import {
   CheckCircleOutlined,
   LoadingOutlined,
@@ -9,15 +8,13 @@ import {
 } from "@ant-design/icons";
 import "./App.css";
 import { fileStatusAtom, FileStatus, configAtom } from "./FileAtom";
-import { useRecoilState } from "recoil";
+import { useRecoilValue } from "recoil";
 import { FSComponent } from "./components/FileSearch";
 
 const { Sider, Content, Footer } = Layout;
 
 export function App() {
-  const [fileStatus, setFileStatus] = useRecoilState(fileStatusAtom);
-  const [config, setConfig] = useRecoilState(configAtom);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const fileStatus = useRecoilValue(fileStatusAtom);
 
   function statusIcon(status: FileStatus) {
     switch (status) {
@@ -29,21 +26,6 @@ export function App() {
         return <LoadingOutlined />;
     }
   }
-
-  // keymap
-  //   useEffect(() => {
-  //     const hundleKeyDown = (event: KeyboardEvent) => {
-  //       if ((event.metaKey || event.ctrlKey) && event.key === "p") {
-  //         event.preventDefault();
-  //         console.log("open file");
-  //         setIsModalOpen(true);
-  //       }
-  //     };
-  //     window.addEventListener("keydown", hundleKeyDown);
-  //     return () => {
-  //       window.removeEventListener("keydown", hundleKeyDown);
-  //     };
-  //   }, []);
 
   return (
     <Layout hasSider style={{ minHeight: "100vh" }}>
